@@ -240,3 +240,151 @@ class Phase3ApplicationTests(TestCase):
         self.assertEqual(retry_res.status_code, status.HTTP_200_OK)
         app.refresh_from_db()
         self.assertIn(app.processing_status, ['pending', 'done'])
+
+    def test_anonymization_removes_all_identifiers(self):
+        text_with_pii = (
+            "John Doe is a 28-year-old male software engineer. "
+            "Contact him at john.doe@email.com or +1 555-123-4567. "
+            "Profile: https://linkedin.com/in/johndoe. "
+            "He has 6 years of experience in Python and Django."
+        )
+        cleaned = regex_strip_pii(text_with_pii)
+        self.assertNotIn("john.doe@email.com", cleaned)
+        self.assertNotIn("+1 555-123-4567", cleaned)
+        self.assertNotIn("https://linkedin.com/in/johndoe", cleaned)
+
+        anonymized = anonymize_cv(cleaned)
+        # Should retain technical skills and experience while redacting identifiers
+        self.assertIn("Python", anonymized)
+        self.assertIn("Django", anonymized)
+        self.assertNotIn("john.doe@email.com", anonymized)
+
+    def test_cleanup_expired_data_90_days_retention(self):
+        from applications.tasks import cleanup_expired_data
+        from notifications.models import EmailLog
+
+        past_95_days = timezone.now() - timedelta(days=95)
+        past_10_days = timezone.now() - timedelta(days=10)
+
+        # 1. Job soft-deleted > 90 days ago
+        deleted_job = Job.objects.create(
+            hr=self.user,
+            title='Old Deleted Job',
+            description='JD',
+            required_skills=[{"skill": "Python", "level": "must"}],
+            application_deadline=past_95_days,
+            ai_shortlist_count=1,
+            final_shortlist_count=1,
+            stage='collecting',
+            is_deleted=True,
+            form_slug='old-deleted-job',
+        )
+        Job.objects.filter(id=deleted_job.id).update(updated_at=past_95_days)
+
+        app_deleted_job = Application.objects.create(
+            job=deleted_job,
+            full_name='Old Candidate 1',
+            email='old1@example.com',
+            phone='9000000001',
+            email_normalized='old1@example.com',
+            phone_normalized='9000000001',
+            resume_file=self._create_mock_docx_file("Some resume content here"),
+            consent_given=True,
+        )
+        EmailLog.objects.create(
+            recipient='old1@example.com',
+            kind='application_received',
+            job=deleted_job,
+            application=app_deleted_job,
+            status='sent',
+        )
+
+        # 2. Job completed > 90 days ago
+        completed_job = Job.objects.create(
+            hr=self.user,
+            title='Old Completed Job',
+            description='JD',
+            required_skills=[{"skill": "Python", "level": "must"}],
+            application_deadline=past_95_days,
+            ai_shortlist_count=1,
+            final_shortlist_count=1,
+            stage='completed',
+            form_slug='old-completed-job',
+        )
+        Job.objects.filter(id=completed_job.id).update(updated_at=past_95_days)
+
+        app_completed_job = Application.objects.create(
+            job=completed_job,
+            full_name='Old Candidate 2',
+            email='old2@example.com',
+            phone='9000000002',
+            email_normalized='old2@example.com',
+            phone_normalized='9000000002',
+            resume_file=self._create_mock_docx_file("Some resume content 2"),
+            consent_given=True,
+        )
+
+        # 3. Active job (even if created 95 days ago, still active/collecting) -> NOT purged
+        active_job = Job.objects.create(
+            hr=self.user,
+            title='Active Long Running Job',
+            description='JD',
+            required_skills=[{"skill": "Python", "level": "must"}],
+            application_deadline=timezone.now() + timedelta(days=10),
+            ai_shortlist_count=1,
+            final_shortlist_count=1,
+            stage='collecting',
+            is_deleted=False,
+            form_slug='active-long-job',
+        )
+        Job.objects.filter(id=active_job.id).update(updated_at=past_95_days)
+
+        app_active = Application.objects.create(
+            job=active_job,
+            full_name='Active Candidate',
+            email='active@example.com',
+            phone='9000000003',
+            email_normalized='active@example.com',
+            phone_normalized='9000000003',
+            resume_file=self._create_mock_docx_file("Active candidate resume"),
+            consent_given=True,
+        )
+
+        # 4. Recently completed job (10 days ago) -> NOT purged
+        recent_completed_job = Job.objects.create(
+            hr=self.user,
+            title='Recent Completed Job',
+            description='JD',
+            required_skills=[{"skill": "Python", "level": "must"}],
+            application_deadline=past_10_days,
+            ai_shortlist_count=1,
+            final_shortlist_count=1,
+            stage='completed',
+            form_slug='recent-completed-job',
+        )
+        Job.objects.filter(id=recent_completed_job.id).update(updated_at=past_10_days)
+
+        app_recent_completed = Application.objects.create(
+            job=recent_completed_job,
+            full_name='Recent Candidate',
+            email='recent@example.com',
+            phone='9000000004',
+            email_normalized='recent@example.com',
+            phone_normalized='9000000004',
+            resume_file=self._create_mock_docx_file("Recent resume"),
+            consent_given=True,
+        )
+
+        # Run cleanup task
+        result = cleanup_expired_data(retention_days=90)
+        self.assertEqual(result['expired_jobs'], 2)
+        self.assertEqual(result['purged_applications'], 2)
+
+        # Expired job candidate data must be purged
+        self.assertFalse(Application.objects.filter(id=app_deleted_job.id).exists())
+        self.assertFalse(Application.objects.filter(id=app_completed_job.id).exists())
+        self.assertFalse(EmailLog.objects.filter(recipient='old1@example.com').exists())
+
+        # Active and recently completed applications must remain intact
+        self.assertTrue(Application.objects.filter(id=app_active.id).exists())
+        self.assertTrue(Application.objects.filter(id=app_recent_completed.id).exists())

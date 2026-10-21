@@ -77,3 +77,67 @@ def process_cv(self, application_id):
         except Exception:
             pass
         raise self.retry(exc=exc, countdown=30)
+
+
+@shared_task(name='applications.tasks.cleanup_expired_data')
+def cleanup_expired_data(retention_days=90):
+    """
+    Daily cleanup task (Phase 7):
+    Per SRS and privacy rules:
+    - Candidate data is retained for 90 days after job completed or removed (soft-deleted).
+    - Deletes candidate applications, physical resume files, and candidate email logs
+      for jobs where:
+      1) job.is_deleted == True AND updated_at <= now - retention_days
+      2) OR job.stage == 'completed' AND updated_at <= now - retention_days
+    - Deletion cascades to interviews, ai_results, feedback.
+    """
+    from datetime import timedelta
+    from jobs.models import Job
+    from notifications.models import EmailLog
+
+    now = timezone.now()
+    cutoff = now - timedelta(days=retention_days)
+
+    # Soft-deleted jobs older than retention period
+    deleted_jobs = Job.objects.filter(is_deleted=True, updated_at__lte=cutoff)
+
+    # Completed jobs older than retention period
+    completed_jobs = Job.objects.filter(stage='completed', updated_at__lte=cutoff)
+
+    expired_job_ids = list(set(
+        list(deleted_jobs.values_list('id', flat=True)) +
+        list(completed_jobs.values_list('id', flat=True))
+    ))
+
+    if not expired_job_ids:
+        logger.info(f"cleanup_expired_data: No jobs older than {retention_days} days to purge.")
+        return {"purged_applications": 0, "purged_files": 0, "expired_jobs": 0}
+
+    purged_apps_count = 0
+    purged_files_count = 0
+
+    applications = Application.objects.filter(job_id__in=expired_job_ids)
+    for app in applications:
+        if app.resume_file:
+            try:
+                app.resume_file.delete(save=False)
+                purged_files_count += 1
+            except Exception as e:
+                logger.warning(f"Failed to delete resume file for app {app.id}: {e}")
+        purged_apps_count += 1
+
+    # Delete EmailLogs linked to these applications
+    EmailLog.objects.filter(application__job_id__in=expired_job_ids).delete()
+
+    # Delete applications (cascades to interviews, ai_results, feedback)
+    applications.delete()
+
+    logger.info(
+        f"cleanup_expired_data: Successfully purged {purged_apps_count} applications, "
+        f"{purged_files_count} files across {len(expired_job_ids)} expired jobs."
+    )
+    return {
+        "purged_applications": purged_apps_count,
+        "purged_files": purged_files_count,
+        "expired_jobs": len(expired_job_ids),
+    }

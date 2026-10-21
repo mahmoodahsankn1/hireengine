@@ -73,12 +73,12 @@ function WaitingRoom({ info, onJoin, joining, error: joinError }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '2rem',
+      padding: 'clamp(1rem, 3vw, 2rem)',
     }}>
       <div className="card" style={{
         maxWidth: '520px',
         width: '100%',
-        padding: '2.5rem',
+        padding: 'clamp(1.25rem, 4vw, 2.5rem)',
         textAlign: 'center',
       }}>
         {/* Icon */}
@@ -99,10 +99,10 @@ function WaitingRoom({ info, onJoin, joining, error: joinError }) {
         </p>
 
         {/* Info grid */}
-        <div style={{
+        <div className="waiting-room-grid" style={{
           background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)',
           padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid var(--border-card)',
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', textAlign: 'left',
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', textAlign: 'left',
         }}>
           {[
             ['Scheduled', formatDate(info.start_at)],
@@ -112,7 +112,7 @@ function WaitingRoom({ info, onJoin, joining, error: joinError }) {
           ].map(([k, v]) => (
             <div key={k}>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.15rem' }}>{k}</div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 500 }}>{v}</div>
+              <div style={{ fontSize: '0.88rem', fontWeight: 500, wordBreak: 'break-word' }}>{v}</div>
             </div>
           ))}
         </div>

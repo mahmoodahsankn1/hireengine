@@ -152,6 +152,8 @@ if 'test' in sys.argv:
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
 
+from celery.schedules import crontab
+
 CELERY_BEAT_SCHEDULE = {
     'check-deadlines-every-minute': {
         'task': 'jobs.tasks.check_deadlines',
@@ -168,6 +170,10 @@ CELERY_BEAT_SCHEDULE = {
     'check-round3-complete-every-minute': {
         'task': 'interviews.tasks.check_round3_complete',
         'schedule': 60.0,
+    },
+    'cleanup-expired-data-daily': {
+        'task': 'applications.tasks.cleanup_expired_data',
+        'schedule': crontab(hour=2, minute=0),  # Daily at 02:00 AM UTC
     },
 }
 

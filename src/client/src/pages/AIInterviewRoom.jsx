@@ -398,7 +398,7 @@ export default function AIInterviewRoom() {
           {/* Timing details */}
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', 
             gap: '1rem',
             marginBottom: '2rem',
             background: 'var(--bg-surface)',

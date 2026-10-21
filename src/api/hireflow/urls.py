@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/forms/<slug:slug>/', PublicJobFormView.as_view(), name='public-job-form'),
     path('api/apply/<slug:slug>/', PublicApplyView.as_view(), name='public-apply'),
     path('api/accounts/', include('accounts.urls')),
+    path('api/auth/', include('accounts.urls')),
     path('api/jobs/', include('jobs.urls')),
     path('api/applications/', include('applications.urls')),
     path('api/interviews/', include('interviews.urls')),

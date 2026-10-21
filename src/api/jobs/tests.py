@@ -218,3 +218,92 @@ class Phase4RoundEngineAndSendTests(TestCase):
         # Second press must be refused with 409 Conflict
         res_double = self.client.post(f'/api/jobs/{self.job.id}/send/', {'send_regret': True})
         self.assertEqual(res_double.status_code, 409)
+
+    def test_check_deadlines_edge_cases_zero_apps_fewer_than_n_ties_and_failed_cv(self):
+        # 1. Zero applicants job
+        job_zero = Job.objects.create(
+            hr=self.hr,
+            title='Zero Apps Job',
+            form_slug='zero-apps-job',
+            description='JD',
+            required_skills=[{"skill": "Django", "level": "must"}],
+            application_deadline=self.now - timedelta(minutes=5),
+            ai_shortlist_count=3,
+            final_shortlist_count=2,
+            stage='collecting',
+        )
+        check_deadlines()
+        job_zero.refresh_from_db()
+        self.assertEqual(job_zero.stage, 'cv_review')
+        round1_zero = JobRound.objects.get(job=job_zero, round=1)
+        self.assertIsNotNone(round1_zero.completed_at)
+
+        # 2. Fewer than N applicants + Ties + Failed CV
+        job_edge = Job.objects.create(
+            hr=self.hr,
+            title='Edge Cases Job',
+            form_slug='edge-cases-job',
+            description='JD',
+            required_skills=[{"skill": "Django", "level": "must"}],
+            application_deadline=self.now - timedelta(minutes=5),
+            ai_shortlist_count=5,  # Wants 5, but we only have 2 qualified
+            final_shortlist_count=2,
+            stage='collecting',
+        )
+
+        # Candidate A: Tied score 80, applied earlier (applied_at - 2 hours)
+        app_tie_a = Application.objects.create(
+            job=job_edge,
+            full_name='Tie Candidate A',
+            email='tie_a@example.com',
+            phone='9111111111',
+            email_normalized='tie_a@example.com',
+            phone_normalized='9111111111',
+            cv_score=80,
+            processing_status='done',
+            applied_at=self.now - timedelta(hours=2),
+        )
+
+        # Candidate B: Tied score 80, applied later (applied_at - 1 hour)
+        app_tie_b = Application.objects.create(
+            job=job_edge,
+            full_name='Tie Candidate B',
+            email='tie_b@example.com',
+            phone='9111111112',
+            email_normalized='tie_b@example.com',
+            phone_normalized='9111111112',
+            cv_score=80,
+            processing_status='done',
+            applied_at=self.now - timedelta(hours=1),
+        )
+
+        # Candidate C: Failed CV processing -> skipped from ranking
+        app_failed = Application.objects.create(
+            job=job_edge,
+            full_name='Failed Candidate C',
+            email='failed_c@example.com',
+            phone='9111111113',
+            email_normalized='failed_c@example.com',
+            phone_normalized='9111111113',
+            cv_score=None,
+            processing_status='failed',
+            applied_at=self.now - timedelta(hours=3),
+        )
+
+        check_deadlines()
+        job_edge.refresh_from_db()
+        self.assertEqual(job_edge.stage, 'cv_review')
+
+        app_tie_a.refresh_from_db()
+        app_tie_b.refresh_from_db()
+        app_failed.refresh_from_db()
+
+        # Due to tie breaker (cv_score DESC, applied_at ASC), earlier applied Candidate A is rank 1
+        self.assertEqual(app_tie_a.cv_rank, 1)
+        self.assertEqual(app_tie_b.cv_rank, 2)
+        self.assertTrue(app_tie_a.advance_next)
+        self.assertTrue(app_tie_b.advance_next)
+
+        # Failed candidate is skipped
+        self.assertIsNone(app_failed.cv_rank)
+        self.assertFalse(app_failed.advance_next)

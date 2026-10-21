@@ -170,10 +170,19 @@ export default function HRInterviewHRRoom() {
         </button>
       </div>
 
+      {/* Mobile backdrop overlay */}
+      {showFeedbackPanel && (
+        <div
+          className="mobile-drawer-overlay"
+          onClick={() => setShowFeedbackPanel(false)}
+        />
+      )}
+
       {/* ── HR Side Panel (right) ── */}
       <div
+        className="hr-side-panel"
         style={{
-          width: showFeedbackPanel ? '380px' : '0',
+          width: showFeedbackPanel ? 'min(100vw, 380px)' : '0',
           transition: 'width 0.25s ease',
           overflow: 'hidden',
           background: 'var(--bg-card)',
@@ -182,7 +191,7 @@ export default function HRInterviewHRRoom() {
           flexDirection: 'column',
         }}
       >
-        <div style={{ width: '380px', height: '100%', overflowY: 'auto', padding: '1.5rem' }}>
+        <div style={{ width: 'min(100vw, 380px)', height: '100%', overflowY: 'auto', padding: '1.5rem' }}>
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <div>

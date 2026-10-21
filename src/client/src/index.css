@@ -584,6 +584,54 @@ p { color: var(--text-secondary); }
   .page { padding: 1.25rem 1rem; }
   .auth-card { padding: 2rem 1.25rem; }
   .page-header { flex-direction: column; }
+  .container { padding: 0 1rem; }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    min-height: 44px; /* Touch friendly on mobile */
+    font-size: 0.875rem;
+  }
+  .card {
+    padding: 1.25rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  .tabs { gap: 0; }
+  .tab-btn { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+  .window-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
+/* Mobile pass for video and interview rooms */
+.mobile-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 105;
+}
+
+@media (max-width: 640px) {
+  .hr-side-panel {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    z-index: 110 !important;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.75) !important;
+  }
+  .waiting-room-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* ── AI Interview Room Animations ──────────────────────── */
