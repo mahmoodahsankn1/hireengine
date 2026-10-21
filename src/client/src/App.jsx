@@ -7,6 +7,8 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import JobForm from './pages/JobForm'
 import JobDetail from './pages/JobDetail'
+import Apply from './pages/Apply'
+import Privacy from './pages/Privacy'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -37,13 +39,22 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            
+            {/* Public Candidate & Policy Routes */}
+            <Route path="/apply/:slug" element={<Apply />} />
+            <Route path="/privacy" element={<Privacy />} />
+
+            {/* Auth Routes */}
             <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
             <Route path="/verify-otp" element={<GuestRoute><VerifyOtp /></GuestRoute>} />
             <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+
+            {/* Protected HR Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/jobs/new" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
             <Route path="/jobs/:id/edit" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
             <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
+
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>
