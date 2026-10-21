@@ -179,7 +179,7 @@ class ApplicationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Application.objects.filter(job__hr=user, job__is_deleted=False).select_related('job')
+        queryset = Application.objects.filter(job__hr=user, job__is_deleted=False).select_related('job').prefetch_related('interviews__ai_result')
         
         job_id = self.request.query_params.get('job')
         if job_id:

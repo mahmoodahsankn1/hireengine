@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { 
   FileText, CheckCircle, AlertTriangle, RefreshCw, Eye, 
   X, Sparkles, Award, Shield, User, ArrowRight,
-  Send, CheckSquare, Square, Clock, Users, Mail, AlertCircle
+  Send, CheckSquare, Square, Clock, Users, Mail, AlertCircle,
+  MessageSquare, Volume2
 } from 'lucide-react'
 import api from '../services/api'
 import Navbar from '../components/Navbar'
@@ -34,6 +35,8 @@ export default function JobDetail() {
   const [activeTab, setActiveTab] = useState('overview')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedCandidate, setSelectedCandidate] = useState(null)
+  const [selectedTranscriptApp, setSelectedTranscriptApp] = useState(null)
+  const [round2Filter, setRound2Filter] = useState('all')
   const [retryingId, setRetryingId] = useState(null)
 
   // Phase 4 Send & Advance States
@@ -180,6 +183,16 @@ export default function JobDetail() {
   // Candidates for Round 2 and Round 3
   const round2Apps = applications.filter(a => a.pipeline_status === 'ai_invited' || a.pipeline_status === 'hr_invited' || a.pipeline_status === 'selected')
   const round3Apps = applications.filter(a => a.pipeline_status === 'hr_invited' || a.pipeline_status === 'selected')
+
+  const filteredRound2Apps = round2Apps.filter(app => {
+    const intv = app.ai_interview
+    if (round2Filter === 'all') return true
+    if (round2Filter === 'completed') return intv?.status === 'completed'
+    if (round2Filter === 'in_progress') return intv?.status === 'in_progress' || intv?.status === 'scheduled'
+    if (round2Filter === 'no_show') return intv?.status === 'no_show' || intv?.status === 'incomplete'
+    if (round2Filter === 'advancing') return app.advance_next
+    return true
+  })
 
   return (
     <>
@@ -578,10 +591,11 @@ export default function JobDetail() {
         {/* Round 2 Tab: AI Interviews */}
         {activeTab === 'round2' && (
           <div>
+            {/* Banner: AI Review Stage */}
             {job.stage === 'ai_review' && (
               <div className="card" style={{ 
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(6,182,212,0.1) 100%)',
-                border: '1px solid rgba(99,102,241,0.3)',
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(6,182,212,0.14) 100%)',
+                border: '1px solid rgba(99,102,241,0.35)',
                 padding: '1.25rem 1.5rem',
                 marginBottom: '1.5rem',
                 display: 'flex',
@@ -594,19 +608,76 @@ export default function JobDetail() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     <Sparkles size={18} color="var(--color-primary-light)" />
                     <h3 style={{ fontSize: '1.1rem' }}>Round 2: AI Review Active</h3>
+                    <span className="badge badge-accent" style={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                      Target Finalists: {job.final_shortlist_count}
+                    </span>
                   </div>
                   <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    AI interviews are complete. Review candidate performance and send HR interview invitations.
+                    AI evaluations complete. Candidates are ranked by AI score (with CV score tie-breakers). Review justifications, inspect transcripts, adjust advancements, and press Send HR Invitations.
                   </p>
                 </div>
 
-                <button 
-                  className="btn btn-primary" 
-                  style={{ padding: '0.65rem 1.35rem' }}
-                  onClick={openSendModal}
-                >
-                  <Send size={15} /> Send HR Invitations
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Advancing: <strong style={{ color: 'var(--color-success)' }}>{round2Apps.filter(a => a.advance_next).length}</strong> / {job.final_shortlist_count}
+                  </span>
+                  <button 
+                    id="send-hr-invites-btn"
+                    className="btn btn-primary" 
+                    style={{ padding: '0.65rem 1.35rem', background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)' }}
+                    onClick={openSendModal}
+                  >
+                    <Send size={15} /> Send HR Invitations
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Banner: AI Interview Stage (In progress) */}
+            {job.stage === 'ai_interview' && (
+              <div className="card" style={{ 
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                padding: '1.25rem 1.5rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div className="spinner" style={{ width: '1.25rem', height: '1.25rem', borderColor: 'var(--color-warning)', borderTopColor: 'transparent' }} />
+                  <div>
+                    <h4 style={{ color: 'var(--color-warning)', marginBottom: '0.2rem' }}>AI Interviews In Progress</h4>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      Candidates are conducting their allocated voice interviews. Once all sessions conclude and automated scoring is complete, Round 2 review will unlock.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Filters Bar for Round 2 */}
+            {round2Apps.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>Filter:</span>
+                {[
+                  { key: 'all', label: `All (${round2Apps.length})` },
+                  { key: 'completed', label: `Completed (${round2Apps.filter(a => a.ai_interview?.status === 'completed').length})` },
+                  { key: 'in_progress', label: `Scheduled / Active (${round2Apps.filter(a => ['scheduled', 'in_progress'].includes(a.ai_interview?.status)).length})` },
+                  { key: 'no_show', label: `No Show / Incomplete (${round2Apps.filter(a => ['no_show', 'incomplete'].includes(a.ai_interview?.status)).length})` },
+                  { key: 'advancing', label: `Advancing (${round2Apps.filter(a => a.advance_next).length})` },
+                ].map(f => (
+                  <button 
+                    key={f.key}
+                    className={`btn ${round2Filter === f.key ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    onClick={() => setRound2Filter(f.key)}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
             )}
 
@@ -618,26 +689,200 @@ export default function JobDetail() {
                   Once Round 1 CV screening is finished and invitations are sent, candidates will appear here for automated AI voice interviewing.
                 </p>
               </div>
+            ) : filteredRound2Apps.length === 0 ? (
+              <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+                <p style={{ color: 'var(--text-secondary)' }}>No candidates match the selected filter.</p>
+              </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {round2Apps.map(app => (
-                  <div key={app.id} className="card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <span style={{ fontWeight: 700 }}>{app.full_name || app.candidate_label}</span>
-                        <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>Round 2 (AI)</span>
-                        {app.email && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({app.email})</span>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {filteredRound2Apps.map(app => {
+                  const intv = app.ai_interview
+                  const aiResult = intv?.ai_result
+                  const aiScore = aiResult?.score
+                  const isCompleted = intv?.status === 'completed'
+                  const isNoShow = intv?.status === 'no_show'
+                  const isIncomplete = intv?.status === 'incomplete'
+                  const isInProgress = intv?.status === 'in_progress'
+                  const isScheduled = intv?.status === 'scheduled'
+                  const hasTranscript = aiResult?.transcript && aiResult.transcript.length > 0
+
+                  return (
+                    <div 
+                      key={app.id} 
+                      className="card" 
+                      style={{ 
+                        padding: '1.25rem 1.5rem', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        gap: '1rem',
+                        flexWrap: 'wrap',
+                        borderLeft: isNoShow || isIncomplete
+                          ? '4px solid var(--color-danger)'
+                          : app.advance_next && job.stage === 'ai_review'
+                            ? '4px solid var(--color-primary)'
+                            : isCompleted && aiScore >= 75
+                              ? '4px solid var(--color-success)'
+                              : '4px solid var(--border-subtle)',
+                      }}
+                    >
+                      {/* Left: Info, Status & Score Breakdown */}
+                      <div style={{ flex: '1 1 320px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                            {app.full_name || app.candidate_label}
+                          </span>
+                          {app.email && (
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                              ({app.email})
+                            </span>
+                          )}
+
+                          {/* Status Badge */}
+                          {isCompleted && (
+                            <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
+                              ✓ AI Completed
+                            </span>
+                          )}
+                          {isInProgress && (
+                            <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>
+                              In Progress
+                            </span>
+                          )}
+                          {isScheduled && (
+                            <span className="badge badge-accent" style={{ fontSize: '0.75rem' }}>
+                              Scheduled {intv?.start_at ? formatDate(intv.start_at) : ''}
+                            </span>
+                          )}
+                          {isNoShow && (
+                            <span className="badge badge-danger" style={{ fontSize: '0.75rem' }}>
+                              No Show
+                            </span>
+                          )}
+                          {isIncomplete && (
+                            <span className="badge badge-danger" style={{ fontSize: '0.75rem' }}>
+                              Incomplete
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Breakdown pills if AI evaluation completed */}
+                        {isCompleted && aiResult?.score_breakdown?.scores && (
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                              Tech: <strong>{aiResult.score_breakdown.scores.technical}/40</strong>
+                            </span>
+                            <span style={{ color: 'var(--border-subtle)' }}>•</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                              Depth: <strong>{aiResult.score_breakdown.scores.depth}/25</strong>
+                            </span>
+                            <span style={{ color: 'var(--border-subtle)' }}>•</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                              Comm: <strong>{aiResult.score_breakdown.scores.communication}/20</strong>
+                            </span>
+                            <span style={{ color: 'var(--border-subtle)' }}>•</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                              Rel: <strong>{aiResult.score_breakdown.scores.relevance}/15</strong>
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Justification snippet */}
+                        {isCompleted && aiResult?.score_breakdown?.justification && (
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', maxWidth: '540px', lineHeight: 1.4 }}>
+                            "{aiResult.score_breakdown.justification}"
+                          </p>
+                        )}
+
+                        {isCompleted && aiResult?.scoring_status === 'pending' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--color-accent)' }}>
+                            <div className="spinner" style={{ width: '0.85rem', height: '0.85rem' }} />
+                            Evaluating interview transcript...
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        CV Score: {app.cv_score}/100 • Applied: {formatDate(app.applied_at)}
+
+                      {/* Right: Scores & Actions */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        {/* AI Score */}
+                        {isCompleted && aiScore !== undefined && aiScore !== null && (
+                          <div style={{ textAlign: 'right', minWidth: '70px' }}>
+                            <div style={{ 
+                              fontSize: '1.5rem', 
+                              fontWeight: 800, 
+                              color: aiScore >= 75 ? 'var(--color-success)' : aiScore >= 55 ? 'var(--color-primary-light)' : 'var(--text-muted)' 
+                            }}>
+                              {aiScore}
+                              <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>/100</span>
+                            </div>
+                            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                              AI Score
+                            </span>
+                          </div>
+                        )}
+
+                        {/* CV Score reference */}
+                        <div style={{ textAlign: 'right', minWidth: '55px', borderLeft: '1px solid var(--border-card)', paddingLeft: '0.75rem' }}>
+                          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                            {app.cv_score}
+                          </div>
+                          <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                            CV Score
+                          </span>
+                        </div>
+
+                        {/* Advance toggle during ai_review */}
+                        {job.stage === 'ai_review' && !isNoShow && (
+                          <button
+                            id={`advance-toggle-${app.id}`}
+                            className={`btn ${app.advance_next ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ 
+                              fontSize: '0.8rem', 
+                              padding: '0.45rem 0.85rem',
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.4rem',
+                              border: app.advance_next ? 'none' : '1px solid var(--border-subtle)'
+                            }}
+                            disabled={advancingAppId === app.id}
+                            onClick={() => handleToggleAdvance(app)}
+                            title={app.advance_next ? "Click to exclude from Round 3" : "Click to include in Round 3"}
+                          >
+                            {advancingAppId === app.id ? (
+                              <div className="spinner" style={{ width: '0.85rem', height: '0.85rem' }} />
+                            ) : app.advance_next ? (
+                              <CheckSquare size={15} />
+                            ) : (
+                              <Square size={15} />
+                            )}
+                            {app.advance_next ? 'Advancing' : 'Excluded'}
+                          </button>
+                        )}
+
+                        {/* View Transcript Button */}
+                        {hasTranscript && (
+                          <button 
+                            id={`view-transcript-${app.id}`}
+                            className="btn btn-secondary" 
+                            style={{ fontSize: '0.85rem', padding: '0.45rem 0.85rem' }}
+                            onClick={() => setSelectedTranscriptApp(app)}
+                          >
+                            <MessageSquare size={15} /> Transcript
+                          </button>
+                        )}
+
+                        {/* Inspect details button */}
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ fontSize: '0.85rem', padding: '0.45rem 0.85rem' }}
+                          onClick={() => setSelectedCandidate(app)}
+                        >
+                          <Eye size={15} /> Details
+                        </button>
                       </div>
                     </div>
-
-                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => setSelectedCandidate(app)}>
-                      <Eye size={14} /> View Details
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -958,6 +1203,140 @@ export default function JobDetail() {
                   </div>
                 </div>
               ) : null}
+            </div>
+          </div>
+        )}
+
+        {/* Transcript Inspection Modal (Phase 5) */}
+        {selectedTranscriptApp && (
+          <div 
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 9999, padding: '1rem'
+            }}
+            onClick={() => setSelectedTranscriptApp(null)}
+          >
+            <div 
+              className="card" 
+              style={{
+                maxWidth: '780px', width: '100%', maxHeight: '90vh',
+                overflowY: 'auto', padding: '2rem', boxShadow: 'var(--shadow-card)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-card)', paddingBottom: '1rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                    <MessageSquare size={18} color="var(--color-primary-light)" />
+                    <h3 style={{ fontSize: '1.25rem' }}>
+                      AI Interview Transcript
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Candidate: <strong>{selectedTranscriptApp.full_name || selectedTranscriptApp.candidate_label}</strong>
+                  </p>
+                </div>
+
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: '0.35rem 0.6rem' }} 
+                  onClick={() => setSelectedTranscriptApp(null)}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Rubric Evaluation Summary */}
+              {selectedTranscriptApp.ai_interview?.ai_result && (
+                <div style={{ marginBottom: '1.5rem', background: 'var(--bg-surface)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem' }}>Evaluation Breakdown</h4>
+                    <span className="badge badge-success" style={{ fontSize: '0.85rem', fontWeight: 700 }}>
+                      Total Score: {selectedTranscriptApp.ai_interview.ai_result.score}/100
+                    </span>
+                  </div>
+
+                  {selectedTranscriptApp.ai_interview.ai_result.score_breakdown?.scores && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                      <div className="card" style={{ padding: '0.75rem', textAlign: 'center', background: 'var(--bg-card)' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Technical</span>
+                        <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-primary-light)' }}>
+                          {selectedTranscriptApp.ai_interview.ai_result.score_breakdown.scores.technical}/40
+                        </div>
+                      </div>
+                      <div className="card" style={{ padding: '0.75rem', textAlign: 'center', background: 'var(--bg-card)' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Depth</span>
+                        <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-accent)' }}>
+                          {selectedTranscriptApp.ai_interview.ai_result.score_breakdown.scores.depth}/25
+                        </div>
+                      </div>
+                      <div className="card" style={{ padding: '0.75rem', textAlign: 'center', background: 'var(--bg-card)' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Communication</span>
+                        <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-success)' }}>
+                          {selectedTranscriptApp.ai_interview.ai_result.score_breakdown.scores.communication}/20
+                        </div>
+                      </div>
+                      <div className="card" style={{ padding: '0.75rem', textAlign: 'center', background: 'var(--bg-card)' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Relevance</span>
+                        <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-warning)' }}>
+                          {selectedTranscriptApp.ai_interview.ai_result.score_breakdown.scores.relevance}/15
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedTranscriptApp.ai_interview.ai_result.score_breakdown?.justification && (
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, fontStyle: 'italic', borderLeft: '3px solid var(--color-primary)', paddingLeft: '0.75rem', marginTop: '0.5rem' }}>
+                      "{selectedTranscriptApp.ai_interview.ai_result.score_breakdown.justification}"
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Conversation Log */}
+              <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '0.5px' }}>
+                Spoken Dialogue Turns
+              </h4>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {selectedTranscriptApp.ai_interview?.ai_result?.transcript?.map((turn, i) => {
+                  const isUser = turn.speaker === 'user' || turn.speaker === 'candidate'
+                  return (
+                    <div 
+                      key={i} 
+                      style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        alignItems: isUser ? 'flex-end' : 'flex-start'
+                      }}
+                    >
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                        {isUser ? (selectedTranscriptApp.full_name || 'Candidate') : 'AI Interviewer'}
+                      </span>
+                      <div style={{ 
+                        maxWidth: '85%', 
+                        padding: '0.75rem 1rem', 
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: '0.875rem',
+                        background: isUser ? 'var(--color-primary)' : 'var(--bg-surface)',
+                        color: '#fff',
+                        border: isUser ? 'none' : '1px solid var(--border-subtle)',
+                        lineHeight: 1.5
+                      }}>
+                        {turn.text}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
+                <button className="btn btn-secondary" onClick={() => setSelectedTranscriptApp(null)}>
+                  Close Transcript
+                </button>
+              </div>
             </div>
           </div>
         )}

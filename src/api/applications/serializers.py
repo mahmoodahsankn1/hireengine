@@ -103,6 +103,7 @@ class ApplicationBlindSerializer(serializers.ModelSerializer):
 class ApplicationRevealedSerializer(serializers.ModelSerializer):
     candidate_label = serializers.SerializerMethodField()
     resume_file_url = serializers.SerializerMethodField()
+    ai_interview = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
@@ -123,6 +124,7 @@ class ApplicationRevealedSerializer(serializers.ModelSerializer):
             'advance_next',
             'applied_at',
             'anonymized_text',
+            'ai_interview',
         ]
 
     def get_candidate_label(self, obj) -> str:
@@ -137,4 +139,33 @@ class ApplicationRevealedSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.resume_file.url)
             return obj.resume_file.url
         return None
+
+    def get_ai_interview(self, obj):
+        intv = obj.interviews.filter(kind='ai').first()
+        if not intv:
+            return None
+
+        ai_res_data = None
+        if hasattr(intv, 'ai_result'):
+            res = intv.ai_result
+            ai_res_data = {
+                "score": res.score,
+                "score_breakdown": res.score_breakdown,
+                "scoring_status": res.scoring_status,
+                "transcript": res.transcript,
+                "model_name": res.model_name,
+                "prompt_version": res.prompt_version,
+                "scored_at": res.scored_at,
+            }
+
+        return {
+            "id": str(intv.id),
+            "status": intv.status,
+            "start_at": intv.start_at,
+            "duration_minutes": intv.duration_minutes,
+            "started_at": intv.started_at,
+            "ended_at": intv.ended_at,
+            "ai_result": ai_res_data,
+        }
+
 

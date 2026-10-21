@@ -9,6 +9,7 @@ import JobForm from './pages/JobForm'
 import JobDetail from './pages/JobDetail'
 import Apply from './pages/Apply'
 import Privacy from './pages/Privacy'
+import AIInterviewRoom from './pages/AIInterviewRoom'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ export default function App() {
             {/* Public Candidate & Policy Routes */}
             <Route path="/apply/:slug" element={<Apply />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/interview/ai/:token" element={<AIInterviewRoom />} />
 
             {/* Auth Routes */}
             <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
