@@ -38,6 +38,7 @@ def _mint_livekit_token(room_name: str, identity: str, is_publisher: bool = True
                 lk_api.VideoGrants(
                     room_join=True,
                     room=room_name,
+                    room_create=True,
                     can_publish=is_publisher,
                     can_subscribe=True,
                 )

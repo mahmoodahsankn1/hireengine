@@ -147,6 +147,12 @@ export default function HRInterviewHRRoom() {
           video={true}
           audio={true}
           style={{ height: '100%' }}
+          onError={(err) => {
+            console.error('LiveKit connection error:', err)
+            setJoinError(`Connection error: ${err?.message || 'Could not connect to the meeting room. Please check your network and try again.'}`)
+            setRoomData(null)
+            setInRoom(false)
+          }}
           onDisconnected={() => setInRoom(false)}
         >
           <VideoConference />
