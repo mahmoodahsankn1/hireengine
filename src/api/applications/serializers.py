@@ -104,6 +104,7 @@ class ApplicationRevealedSerializer(serializers.ModelSerializer):
     candidate_label = serializers.SerializerMethodField()
     resume_file_url = serializers.SerializerMethodField()
     ai_interview = serializers.SerializerMethodField()
+    hr_interview = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
@@ -125,6 +126,7 @@ class ApplicationRevealedSerializer(serializers.ModelSerializer):
             'applied_at',
             'anonymized_text',
             'ai_interview',
+            'hr_interview',
         ]
 
     def get_candidate_label(self, obj) -> str:
@@ -166,6 +168,35 @@ class ApplicationRevealedSerializer(serializers.ModelSerializer):
             "started_at": intv.started_at,
             "ended_at": intv.ended_at,
             "ai_result": ai_res_data,
+        }
+
+    def get_hr_interview(self, obj):
+        intv = obj.interviews.filter(kind='hr').first()
+        if not intv:
+            return None
+
+        feedback_data = None
+        if hasattr(intv, 'feedback'):
+            fb = intv.feedback
+            feedback_data = {
+                "id": str(fb.id),
+                "decision": fb.decision,
+                "rating": fb.rating,
+                "notes": fb.notes,
+                "submitted_at": fb.submitted_at,
+            }
+
+        return {
+            "id": str(intv.id),
+            "status": intv.status,
+            "start_at": intv.start_at,
+            "duration_minutes": intv.duration_minutes,
+            "join_opens_at": intv.join_opens_at,
+            "join_closes_at": intv.join_closes_at,
+            "started_at": intv.started_at,
+            "ended_at": intv.ended_at,
+            "room_name": intv.room_name,
+            "feedback": feedback_data,
         }
 
 

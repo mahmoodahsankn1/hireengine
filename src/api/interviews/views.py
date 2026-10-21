@@ -7,12 +7,47 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 
-from interviews.models import Interview, AIResult
+from interviews.models import Interview, AIResult, Feedback
 from ai.services import mint_realtime_session
 from interviews.tasks import score_interview_task
 
 logger = logging.getLogger(__name__)
+
+
+def _mint_livekit_token(room_name: str, identity: str, is_publisher: bool = True) -> str:
+    """
+    Mints a LiveKit access token for the given room + identity.
+    Returns the JWT string, or raises ValueError if LiveKit is not configured.
+    """
+    lk_url = getattr(settings, 'LIVEKIT_URL', '') or ''
+    api_key = getattr(settings, 'LIVEKIT_API_KEY', '') or ''
+    api_secret = getattr(settings, 'LIVEKIT_API_SECRET', '') or ''
+
+    if not all([lk_url, api_key, api_secret]) or api_key.startswith('your_'):
+        # Return a mock token for development
+        return f"mock-livekit-token-{room_name}-{identity}"
+
+    try:
+        from livekit import api as lk_api
+        token = (
+            lk_api.AccessToken(api_key, api_secret)
+            .with_identity(identity)
+            .with_grants(
+                lk_api.VideoGrants(
+                    room_join=True,
+                    room=room_name,
+                    can_publish=is_publisher,
+                    can_subscribe=True,
+                )
+            )
+            .to_jwt()
+        )
+        return token
+    except Exception as exc:
+        logger.error(f"LiveKit token mint failed: {exc}")
+        raise ValueError(f"Failed to mint LiveKit token: {exc}")
 
 PLATFORM_INTERVIEW_PROMPT = (
     "You are HireFlow's AI Technical Interviewer. You are conducting a direct, professional technical "
@@ -332,3 +367,270 @@ class HRInterviewDetailView(APIView):
             "candidate_email": interview.application.email,
             "ai_result": ai_res_data,
         }, status=status.HTTP_200_OK)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 6: HR Video Interview
+# ─────────────────────────────────────────────────────────────────────────────
+
+class HRMeetingJoinView(APIView):
+    """
+    POST /api/meetings/<token>/join
+    Candidate-facing (AllowAny). Validates the access window and mints a LiveKit
+    viewer token for the candidate to join the video room.
+    - kind=hr, status scheduled|in_progress
+    - now in [join_opens_at, join_closes_at]
+    - Sets started_at on first join
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, token):
+        interview = get_object_or_404(
+            Interview.objects.select_related('job__hr', 'application'),
+            access_token=token,
+            kind='hr'
+        )
+
+        now = timezone.now()
+
+        if interview.status in ['completed', 'no_show', 'cancelled']:
+            return Response(
+                {"error": f"This interview is already {interview.status}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if now < interview.join_opens_at:
+            return Response(
+                {
+                    "error": "You are too early. The room opens closer to your scheduled time.",
+                    "join_opens_at": interview.join_opens_at,
+                    "now": now,
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if now > interview.join_closes_at:
+            interview.status = 'no_show'
+            interview.save(update_fields=['status'])
+            return Response(
+                {"error": "The join window has expired. This session is marked as no-show."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Set started_at on first candidate join
+        if interview.started_at is None:
+            interview.started_at = now
+            if interview.status == 'scheduled':
+                interview.status = 'in_progress'
+            interview.save(update_fields=['started_at', 'status'])
+
+        room_name = interview.room_name or f"hr-{interview.application_id}"
+        identity = f"candidate-{interview.application_id}"
+
+        try:
+            lk_token = _mint_livekit_token(room_name, identity, is_publisher=True)
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        lk_url = getattr(settings, 'LIVEKIT_URL', 'wss://localhost:7880')
+
+        return Response({
+            "token": lk_token,
+            "server_url": lk_url,
+            "room_name": room_name,
+            "identity": identity,
+            "job_title": interview.job.title,
+            "company_name": interview.job.hr.company_name,
+            "start_at": interview.start_at,
+            "duration_minutes": interview.duration_minutes,
+            "join_opens_at": interview.join_opens_at,
+            "join_closes_at": interview.join_closes_at,
+            "started_at": interview.started_at,
+        }, status=status.HTTP_200_OK)
+
+
+class HRMeetingInfoView(APIView):
+    """
+    GET /api/meetings/<token>/info
+    Public endpoint: returns interview metadata for the candidate waiting room.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        interview = get_object_or_404(
+            Interview.objects.select_related('job__hr', 'application'),
+            access_token=token,
+            kind='hr'
+        )
+
+        now = timezone.now()
+        can_join = (
+            interview.status in ['scheduled', 'in_progress'] and
+            interview.join_opens_at <= now <= interview.join_closes_at
+        )
+
+        return Response({
+            "status": interview.status,
+            "job_title": interview.job.title,
+            "company_name": interview.job.hr.company_name,
+            "candidate_name": interview.application.full_name,
+            "start_at": interview.start_at,
+            "duration_minutes": interview.duration_minutes,
+            "join_opens_at": interview.join_opens_at,
+            "join_closes_at": interview.join_closes_at,
+            "started_at": interview.started_at,
+            "now": now,
+            "can_join": can_join,
+            "is_early": now < interview.join_opens_at,
+            "is_expired": now > interview.join_closes_at and interview.status == 'scheduled',
+        }, status=status.HTTP_200_OK)
+
+
+class HRInterviewJoinView(APIView):
+    """
+    POST /api/interviews/<uuid:pk>/join
+    HR-only (IsAuthenticated + owner). Mints a LiveKit publisher token for the HR
+    user. Only allowed inside the join window.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        interview = get_object_or_404(
+            Interview.objects.select_related('job__hr', 'application'),
+            pk=pk,
+            kind='hr',
+            hr=request.user
+        )
+
+        now = timezone.now()
+
+        if interview.status in ['completed', 'no_show', 'cancelled']:
+            return Response(
+                {"error": f"This interview is already {interview.status}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if now < interview.join_opens_at:
+            return Response(
+                {
+                    "error": "Too early. The room is not open yet.",
+                    "join_opens_at": interview.join_opens_at,
+                    "now": now,
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if now > interview.reserved_until:
+            return Response(
+                {"error": "The interview slot has expired."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        room_name = interview.room_name or f"hr-{interview.application_id}"
+        identity = f"hr-{request.user.id}"
+
+        try:
+            lk_token = _mint_livekit_token(room_name, identity, is_publisher=True)
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        lk_url = getattr(settings, 'LIVEKIT_URL', 'wss://localhost:7880')
+
+        # Build context data for the HR side-panel
+        app = interview.application
+        cv_score = app.cv_score
+        ai_score = None
+        try:
+            ai_intv = app.interviews.get(kind='ai')
+            if hasattr(ai_intv, 'ai_result'):
+                ai_score = ai_intv.ai_result.score
+        except Exception:
+            pass
+
+        return Response({
+            "token": lk_token,
+            "server_url": lk_url,
+            "room_name": room_name,
+            "identity": identity,
+            "interview_id": str(interview.id),
+            "candidate_name": app.full_name,
+            "candidate_email": app.email,
+            "cv_score": cv_score,
+            "ai_score": ai_score,
+            "resume_url": app.resume_file.url if app.resume_file else None,
+            "start_at": interview.start_at,
+            "duration_minutes": interview.duration_minutes,
+            "started_at": interview.started_at,
+            "status": interview.status,
+        }, status=status.HTTP_200_OK)
+
+
+class HRInterviewFeedbackView(APIView):
+    """
+    POST /api/interviews/<uuid:pk>/feedback
+    HR-only (owner). Submits rating, notes, and decision for an HR interview.
+    Sets interview status to 'completed'.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        interview = get_object_or_404(
+            Interview.objects.select_related('job', 'application'),
+            pk=pk,
+            kind='hr',
+            hr=request.user
+        )
+
+        if interview.status == 'cancelled':
+            return Response(
+                {"error": "Cannot submit feedback for a cancelled interview."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if hasattr(interview, 'feedback'):
+            return Response(
+                {"error": "Feedback has already been submitted for this interview."},
+                status=status.HTTP_409_CONFLICT
+            )
+
+        decision = request.data.get('decision')
+        if decision not in ('selected', 'rejected'):
+            return Response(
+                {"error": "decision must be 'selected' or 'rejected'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        rating = request.data.get('rating')
+        if rating is not None:
+            try:
+                rating = int(rating)
+                if not (1 <= rating <= 10):
+                    raise ValueError
+            except (TypeError, ValueError):
+                return Response(
+                    {"error": "rating must be an integer from 1 to 10."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        notes = request.data.get('notes', '')
+
+        Feedback.objects.create(
+            interview=interview,
+            rating=rating,
+            notes=notes,
+            decision=decision,
+        )
+
+        interview.status = 'completed'
+        interview.ended_at = timezone.now()
+        interview.save(update_fields=['status', 'ended_at'])
+
+        logger.info(
+            f"HR Interview {interview.id} feedback submitted: decision={decision}, rating={rating}"
+        )
+
+        return Response({
+            "message": "Feedback submitted successfully.",
+            "decision": decision,
+            "interview_status": interview.status,
+        }, status=status.HTTP_201_CREATED)

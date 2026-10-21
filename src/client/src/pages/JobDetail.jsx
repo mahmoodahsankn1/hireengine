@@ -5,7 +5,7 @@ import {
   FileText, CheckCircle, AlertTriangle, RefreshCw, Eye, 
   X, Sparkles, Award, Shield, User, ArrowRight,
   Send, CheckSquare, Square, Clock, Users, Mail, AlertCircle,
-  MessageSquare, Volume2
+  MessageSquare, Volume2, Video, ExternalLink
 } from 'lucide-react'
 import api from '../services/api'
 import Navbar from '../components/Navbar'
@@ -181,8 +181,8 @@ export default function JobDetail() {
   const advancingCount = applications.filter(a => a.advance_next).length
 
   // Candidates for Round 2 and Round 3
-  const round2Apps = applications.filter(a => a.pipeline_status === 'ai_invited' || a.pipeline_status === 'hr_invited' || a.pipeline_status === 'selected')
-  const round3Apps = applications.filter(a => a.pipeline_status === 'hr_invited' || a.pipeline_status === 'selected')
+  const round2Apps = applications.filter(a => !!a.ai_interview || a.pipeline_status === 'ai_invited' || a.pipeline_status === 'hr_invited' || a.pipeline_status === 'selected')
+  const round3Apps = applications.filter(a => !!a.hr_interview || a.pipeline_status === 'hr_invited' || a.pipeline_status === 'selected')
 
   const filteredRound2Apps = round2Apps.filter(app => {
     const intv = app.ai_interview
@@ -923,6 +923,24 @@ export default function JobDetail() {
               </div>
             )}
 
+            {job.stage === 'hr_interview' && (
+              <div className="card" style={{ 
+                background: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.25)',
+                padding: '1rem 1.25rem',
+                marginBottom: '1.5rem',
+                display: 'flex', alignItems: 'center', gap: '0.75rem'
+              }}>
+                <Video size={20} color="var(--color-primary-light)" />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.1rem' }}>HR Video Interviews Active</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Live video interviews are scheduled. Join each room at the allocated time using the buttons below.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {round3Apps.length === 0 ? (
               <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
                 <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🎥</p>
@@ -932,27 +950,109 @@ export default function JobDetail() {
                 </p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {round3Apps.map(app => (
-                  <div key={app.id} className="card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <span style={{ fontWeight: 700 }}>{app.full_name || app.candidate_label}</span>
-                        <span className={`badge ${app.pipeline_status === 'selected' ? 'badge-success' : 'badge-primary'}`} style={{ fontSize: '0.75rem' }}>
-                          {app.pipeline_status === 'selected' ? 'Selected' : 'HR Round'}
-                        </span>
-                        {app.email && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({app.email})</span>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {round3Apps.map(app => {
+                  const intv = app.hr_interview
+                  const fb = intv?.feedback
+                  const isScheduled = intv?.status === 'scheduled'
+                  const isInProgress = intv?.status === 'in_progress'
+                  const isCompleted = intv?.status === 'completed'
+                  const isNoShow = intv?.status === 'no_show' || intv?.status === 'incomplete'
+                  const hasFeedback = !!fb
+
+                  return (
+                    <div
+                      key={app.id}
+                      className="card"
+                      style={{
+                        padding: '1.25rem 1.5rem',
+                        display: 'flex', justifyContent: 'space-between',
+                        alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
+                        borderLeft: isNoShow
+                          ? '4px solid var(--color-danger)'
+                          : isCompleted && fb?.decision === 'selected'
+                            ? '4px solid var(--color-success)'
+                            : isCompleted && fb?.decision === 'rejected'
+                              ? '4px solid var(--color-danger)'
+                              : isCompleted
+                                ? '4px solid var(--color-accent)'
+                                : '4px solid var(--border-subtle)',
+                      }}
+                    >
+                      {/* Left info */}
+                      <div style={{ flex: '1 1 320px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{app.full_name || app.candidate_label}</span>
+                          {app.email && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({app.email})</span>}
+
+                          {isScheduled && (
+                            <span className="badge badge-accent" style={{ fontSize: '0.75rem' }}>
+                              <Clock size={11} /> Scheduled
+                            </span>
+                          )}
+                          {isInProgress && (
+                            <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>In Progress</span>
+                          )}
+                          {isCompleted && !hasFeedback && (
+                            <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>Completed · Pending Feedback</span>
+                          )}
+                          {isCompleted && fb?.decision === 'selected' && (
+                            <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>✓ Selected</span>
+                          )}
+                          {isCompleted && fb?.decision === 'rejected' && (
+                            <span className="badge badge-danger" style={{ fontSize: '0.75rem' }}>✗ Rejected</span>
+                          )}
+                          {isNoShow && (
+                            <span className="badge badge-danger" style={{ fontSize: '0.75rem' }}>No Show</span>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          CV: <strong>{app.cv_score}/100</strong>
+                          {app.ai_interview?.ai_result?.score != null && (
+                            <> · AI Score: <strong>{app.ai_interview.ai_result.score}/100</strong></>
+                          )}
+                          {intv?.start_at && (
+                            <> · Interview: <strong>{formatDate(intv.start_at)}</strong></>
+                          )}
+                        </div>
+
+                        {hasFeedback && (
+                          <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            {fb.rating && <><Award size={12} style={{ verticalAlign: 'middle' }} /> Rating: <strong>{fb.rating}/10</strong> · </>}
+                            {fb.notes && <span style={{ fontStyle: 'italic' }}>"{fb.notes.slice(0,80)}{fb.notes.length > 80 ? '…' : ''}"</span>}
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        CV Score: {app.cv_score}/100 • Applied: {formatDate(app.applied_at)}
+
+                      {/* Right actions */}
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {intv && (isScheduled || isInProgress) && (
+                          <Link
+                            id={`join-room-${app.id}`}
+                            to={`/interviews/${intv.id}/room`}
+                            className="btn btn-primary"
+                            style={{
+                              fontSize: '0.85rem', padding: '0.5rem 1rem',
+                              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                              display: 'flex', alignItems: 'center', gap: '0.4rem',
+                            }}
+                          >
+                            <Video size={14} /> Join Room
+                          </Link>
+                        )}
+
+                        <button
+                          className="btn btn-secondary"
+                          style={{ fontSize: '0.85rem', padding: '0.45rem 0.85rem' }}
+                          onClick={() => setSelectedCandidate(app)}
+                        >
+                          <Eye size={15} /> Details
+                        </button>
                       </div>
                     </div>
-
-                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => setSelectedCandidate(app)}>
-                      <Eye size={14} /> View Details
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

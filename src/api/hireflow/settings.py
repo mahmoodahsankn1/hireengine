@@ -165,6 +165,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'interviews.tasks.check_round2_complete',
         'schedule': 60.0,
     },
+    'check-round3-complete-every-minute': {
+        'task': 'interviews.tasks.check_round3_complete',
+        'schedule': 60.0,
+    },
 }
 
 # External Services

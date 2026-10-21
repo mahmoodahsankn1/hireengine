@@ -213,3 +213,68 @@ def check_round2_complete():
             )
 
     return f"check_round2_complete finished. Processed {processed_jobs} jobs."
+
+
+@shared_task(name='interviews.tasks.check_round3_complete')
+def check_round3_complete():
+    """
+    Beat task (runs every minute):
+    - Identifies jobs in stage 'hr_interview' (not deleted).
+    - Checks if all HR interviews are past their reserved_until time.
+    - Inside a transaction (select_for_update):
+      - Re-verifies stage == 'hr_interview'.
+      - No-shows are automatically rejected; attended interviews need a decision.
+      - Transitions stage -> 'hr_review'.
+      - Marks JobRound 3 as completed and hr_notified.
+      - Queues HR notification email.
+    """
+    from jobs.models import Job, JobRound
+    from applications.models import Application
+    from interviews.models import Interview, Feedback
+    from notifications.tasks import send_round_finished_hr_email
+
+    terminal_statuses = ['completed', 'incomplete', 'no_show', 'cancelled']
+    jobs = list(Job.objects.filter(stage='hr_interview', is_deleted=False))
+
+    processed_jobs = 0
+    now = timezone.now()
+
+    for job in jobs:
+        hr_interviews = list(Interview.objects.filter(job=job, kind='hr'))
+        if not hr_interviews:
+            continue
+
+        # All HR interviews must be past reserved_until
+        all_past_window = all(intv.reserved_until < now for intv in hr_interviews)
+        if not all_past_window:
+            continue
+
+        with transaction.atomic():
+            locked_job = Job.objects.select_for_update().get(id=job.id)
+            if locked_job.stage != 'hr_interview':
+                continue
+
+            # Auto-mark no-shows for any HR interviews still in scheduled/in_progress
+            for intv in hr_interviews:
+                if intv.status not in terminal_statuses:
+                    intv.status = 'no_show'
+                    intv.save(update_fields=['status'])
+
+            # Transition stage to hr_review
+            locked_job.stage = 'hr_review'
+            locked_job.save(update_fields=['stage', 'updated_at'])
+
+            # Mark JobRound 3 completed and notified
+            round_3, _ = JobRound.objects.get_or_create(job=locked_job, round=3)
+            round_3.completed_at = now
+            round_3.hr_notified_at = now
+            round_3.save(update_fields=['completed_at', 'hr_notified_at'])
+
+            # Queue HR notification email on commit
+            j_id_str = str(locked_job.id)
+            transaction.on_commit(lambda j_id=j_id_str: send_round_finished_hr_email.delay(j_id, 3))
+
+            processed_jobs += 1
+            logger.info(f"Job {locked_job.id} transitioned to hr_review.")
+
+    return f"check_round3_complete finished. Processed {processed_jobs} jobs."

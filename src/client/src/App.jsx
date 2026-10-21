@@ -10,6 +10,8 @@ import JobDetail from './pages/JobDetail'
 import Apply from './pages/Apply'
 import Privacy from './pages/Privacy'
 import AIInterviewRoom from './pages/AIInterviewRoom'
+import HRInterviewRoom from './pages/HRInterviewRoom'
+import HRInterviewHRRoom from './pages/HRInterviewHRRoom'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -45,6 +47,8 @@ export default function App() {
             <Route path="/apply/:slug" element={<Apply />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/interview/ai/:token" element={<AIInterviewRoom />} />
+            {/* Phase 6: HR video interview candidate room */}
+            <Route path="/interview/hr/:token" element={<HRInterviewRoom />} />
 
             {/* Auth Routes */}
             <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
@@ -56,6 +60,8 @@ export default function App() {
             <Route path="/jobs/new" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
             <Route path="/jobs/:id/edit" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
             <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
+            {/* Phase 6: HR-side interview room */}
+            <Route path="/interviews/:interviewId/room" element={<ProtectedRoute><HRInterviewHRRoom /></ProtectedRoute>} />
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
