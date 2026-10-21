@@ -210,7 +210,7 @@ def _heuristic_score_cv(job_title: str, job_description: str, required_skills: l
 # Phase 5: AI Interview Services (OpenAI Realtime + Transcript Scoring)
 # =====================================================================
 
-REALTIME_MODEL = "gpt-4o-realtime-preview-2024-12-17"
+REALTIME_MODEL = getattr(settings, 'OPENAI_REALTIME_MODEL', 'gpt-realtime')
 
 INTERVIEW_SCORER_SYSTEM_PROMPT = (
     "You are an expert technical interviewer evaluator. Evaluate the candidate's interview transcript "
@@ -238,13 +238,11 @@ INTERVIEW_SCORER_SYSTEM_PROMPT = (
 def mint_realtime_session(instructions: str) -> dict:
     """
     Mints an ephemeral OpenAI Realtime session key server-side.
-    Per OpenAI Realtime WebRTC docs:
-    - Model: gpt-4o-realtime-preview-2024-12-17
+    Per OpenAI Realtime GA WebRTC docs:
+    - Endpoint: https://api.openai.com/v1/realtime/client_secrets
+    - Model: gpt-realtime
     - Voice: alloy
-    - Modalities: ["audio", "text"]
-    - Instructions: platform prompt + HR prompt + JD + anonymized CV
-    - Input audio transcription enabled (whisper-1)
-    - Returns ephemeral client_secret.value
+    - Returns ephemeral client_secret value (ek_...)
     """
     api_key = getattr(settings, 'OPENAI_API_KEY', '') or os.getenv('OPENAI_API_KEY', '')
     if not api_key or api_key.startswith('your_openai') or api_key == 'sk-...':
@@ -255,20 +253,17 @@ def mint_realtime_session(instructions: str) -> dict:
             "model": REALTIME_MODEL,
         }
 
-    url = "https://api.openai.com/v1/realtime/sessions"
+    url = "https://api.openai.com/v1/realtime/client_secrets"
     payload = {
-        "model": REALTIME_MODEL,
-        "voice": "alloy",
-        "modalities": ["audio", "text"],
-        "instructions": instructions,
-        "input_audio_transcription": {
-            "model": "whisper-1"
-        },
-        "turn_detection": {
-            "type": "server_vad",
-            "threshold": 0.5,
-            "prefix_padding_ms": 300,
-            "silence_duration_ms": 500
+        "session": {
+            "type": "realtime",
+            "model": REALTIME_MODEL,
+            "instructions": instructions,
+            "audio": {
+                "output": {
+                    "voice": "alloy"
+                }
+            }
         }
     }
 
@@ -285,13 +280,12 @@ def mint_realtime_session(instructions: str) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode('utf-8'))
-            client_secret = data.get("client_secret", {})
-            key = client_secret.get("value") or data.get("id")
+            key = data.get("value")
             return {
                 "key": key,
                 "is_mock": False,
-                "model": data.get("model", REALTIME_MODEL),
-                "expires_at": client_secret.get("expires_at"),
+                "model": REALTIME_MODEL,
+                "expires_at": data.get("expires_at"),
             }
     except Exception as exc:
         logger.error(f"Failed to mint OpenAI Realtime session: {exc}. Falling back to mock session.")

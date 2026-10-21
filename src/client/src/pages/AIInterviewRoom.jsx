@@ -27,6 +27,7 @@ export default function AIInterviewRoom() {
   const [userSpeaking, setUserSpeaking] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isMockMode, setIsMockMode] = useState(false)
+  const [audioBlocked, setAudioBlocked] = useState(false)
 
   // Refs
   const audioStreamRef = useRef(null)
@@ -134,6 +135,14 @@ export default function AIInterviewRoom() {
     setViewState('in_interview')
     setIsSubmitting(false)
 
+    // Pre-activate / warm up audio element on direct user gesture for mobile browsers
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.play().catch(() => {})
+    }
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume().catch(() => {})
+    }
+
     try {
       // Obtain mic stream if not already active
       let stream = audioStreamRef.current
@@ -197,6 +206,12 @@ export default function AIInterviewRoom() {
       pc.ontrack = (event) => {
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = event.streams[0]
+          remoteAudioRef.current.play().then(() => {
+            setAudioBlocked(false)
+          }).catch(e => {
+            console.warn('Audio auto-play blocked by browser policy:', e)
+            setAudioBlocked(true)
+          })
         }
         setAiSpeaking(true)
       }
@@ -215,7 +230,7 @@ export default function AIInterviewRoom() {
         const initialGreet = {
           type: 'response.create',
           response: {
-            modalities: ['audio', 'text'],
+            modalities: ['text', 'audio'],
             instructions: 'Greet the candidate warmly, state your role as HireFlow AI Interviewer, and ask the first technical question based on the job requirements.'
           }
         }
@@ -238,9 +253,13 @@ export default function AIInterviewRoom() {
             }
           }
 
-          // AI assistant audio transcript done
-          if (msg.type === 'response.audio_transcript.done') {
-            const aiText = msg.transcript?.trim()
+          // AI assistant audio transcript done (support GA and preview event shapes)
+          if (
+            msg.type === 'response.audio_transcript.done' ||
+            msg.type === 'response.output_audio_transcript.done' ||
+            msg.type === 'response.output_text.done'
+          ) {
+            const aiText = (msg.transcript || msg.text || '')?.trim()
             if (aiText) {
               setTranscript(prev => [
                 ...prev,
@@ -265,10 +284,8 @@ export default function AIInterviewRoom() {
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
 
-      // Post offer to OpenAI Realtime WebRTC endpoint
-      const baseUrl = 'https://api.openai.com/v1/realtime'
-      const model = 'gpt-4o-realtime-preview-2024-12-17'
-      const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+      // Post offer to OpenAI Realtime WebRTC GA endpoint (/v1/realtime/calls)
+      const sdpResponse = await fetch('https://api.openai.com/v1/realtime/calls', {
         method: 'POST',
         body: offer.sdp,
         headers: {
@@ -278,7 +295,8 @@ export default function AIInterviewRoom() {
       })
 
       if (!sdpResponse.ok) {
-        throw new Error(`OpenAI Realtime WebRTC returned status ${sdpResponse.status}`)
+        const errText = await sdpResponse.text().catch(() => '')
+        throw new Error(`OpenAI Realtime WebRTC returned status ${sdpResponse.status}: ${errText}`)
       }
 
       const answerSdp = await sdpResponse.text()
@@ -303,10 +321,18 @@ export default function AIInterviewRoom() {
     setTranscript([welcomeTurn])
 
     // Speak welcome using browser speech if available
-    if ('speechSynthesis' in window) {
-      const utter = new SpeechSynthesisUtterance(welcomeTurn.text)
+    speakText(welcomeTurn.text)
+  }
+
+  function speakText(text) {
+    if (!('speechSynthesis' in window)) return
+    try {
+      window.speechSynthesis.cancel()
+      const utter = new SpeechSynthesisUtterance(text)
       utter.rate = 1.0
       window.speechSynthesis.speak(utter)
+    } catch (e) {
+      console.warn('Speech synthesis error:', e)
     }
   }
 
@@ -336,11 +362,7 @@ export default function AIInterviewRoom() {
         time: new Date().toISOString()
       }
       setTranscript(prev => [...prev, aiTurn])
-      if ('speechSynthesis' in window) {
-        const utter = new SpeechSynthesisUtterance(nextQ)
-        utter.rate = 1.0
-        window.speechSynthesis.speak(utter)
-      }
+      speakText(nextQ)
     }, 1200)
   }
 
@@ -516,8 +538,13 @@ export default function AIInterviewRoom() {
                 The start button will automatically unlock at your scheduled interview time.
               </p>
             )}
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+              📱 <strong>Mobile Note:</strong> Make sure your device is not on Silent Mode (turn off physical mute switch on iPhone) and media volume is turned up.
+            </p>
           </div>
         </div>
+        {/* Persistent audio element for iOS/mobile activation */}
+        <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
       </div>
     )
   }
@@ -526,8 +553,39 @@ export default function AIInterviewRoom() {
   if (viewState === 'in_interview') {
     return (
       <div className="page" style={{ maxWidth: '860px', margin: '0 auto', paddingTop: '1.5rem' }}>
-        {/* Hidden Remote Audio Element */}
-        <audio ref={remoteAudioRef} autoPlay />
+        {/* Remote Audio Element */}
+        <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+
+        {/* Audio blocked notification on mobile browsers */}
+        {audioBlocked && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid var(--color-danger)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem 1rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '0.5rem',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-danger)', fontWeight: 600 }}>
+              🔇 Audio playback was blocked by your browser's autoplay policy.
+            </div>
+            <button 
+              onClick={() => {
+                if (remoteAudioRef.current) {
+                  remoteAudioRef.current.play().then(() => setAudioBlocked(false)).catch(e => console.warn(e))
+                }
+              }}
+              className="btn btn-primary"
+              style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
+            >
+              🔊 Tap to Enable Audio
+            </button>
+          </div>
+        )}
 
         {/* Top Control Bar */}
         <div className="card" style={{ 
@@ -665,6 +723,25 @@ export default function AIInterviewRoom() {
                       lineHeight: 1.5
                     }}>
                       {turn.text}
+                      {!isUser && isMockMode && (
+                        <div style={{ marginTop: '0.4rem' }}>
+                          <button 
+                            type="button"
+                            onClick={() => speakText(turn.text)}
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.08)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '4px',
+                              color: 'var(--color-accent)',
+                              fontSize: '0.75rem',
+                              padding: '0.2rem 0.5rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            🔊 Play Audio
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
