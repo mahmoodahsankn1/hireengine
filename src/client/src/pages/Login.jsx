@@ -28,8 +28,9 @@ export default function Login() {
       if (data?.detail) {
         setError(data.detail)
       } else if (data?.code === 'email_not_verified') {
-        setError('Email not verified. ')
-        // Provide resend link
+        setError('Email not verified.')
+      } else if (!err.response) {
+        setError('Cannot connect to backend server. Please verify the backend tunnel is running.')
       } else {
         setError('Invalid email or password.')
       }
