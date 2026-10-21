@@ -232,5 +232,5 @@ EMAIL_USE_TLS = os.getenv('SMTP_USE_TLS', 'True').lower() in ('true', '1', 'yes'
 EMAIL_HOST_USER = os.getenv('SMTP_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('SMTP_USER') or 'noreply@hireflow.local')
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://hireengine.vercel.app').rstrip('/')
 

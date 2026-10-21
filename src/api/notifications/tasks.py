@@ -145,7 +145,7 @@ def send_round_finished_hr_email(self, job_id, round_number):
     try:
         job = Job.objects.select_related('hr').get(id=job_id)
         hr = job.hr
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://hireengine.vercel.app').rstrip('/')
         job_url = f"{frontend_url}/jobs/{job.id}"
 
         subject = f"Round {round_number} Finished: Review Candidates for {job.title}"
@@ -216,7 +216,7 @@ def send_email_task(self, email_log_id):
         hr = job.hr if job else None
         company_name = hr.company_name if hr and hr.company_name else "Our Hiring Team"
         tz_name = hr.timezone if hr and hr.timezone else 'Asia/Kolkata'
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://hireengine.vercel.app').rstrip('/')
 
         kind = email_log.kind
         subject = ""

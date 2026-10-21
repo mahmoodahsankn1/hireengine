@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.core.files.base import ContentFile
 from django.utils import timezone
+from django.conf import settings
 
 from accounts.models import User
 from jobs.models import Job, AvailabilityWindow, JobRound
@@ -344,7 +345,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("HireFlow Phase 7 Seed Data Completed Successfully!"))
         self.stdout.write("=" * 64)
         self.stdout.write(f"  * HR Login:      {hr_email}")
-        self.stdout.write(f"  * HR Password:   {hr_password}")
-        self.stdout.write(f"  * Public Apply:  http://localhost:5173/apply/{job.form_slug}")
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://hireengine.vercel.app').rstrip('/')
+        self.stdout.write(f"  * Public Apply:  {frontend_url}/apply/{job.form_slug}")
         self.stdout.write(f"  * Job ID:        {job.id}")
         self.stdout.write("=" * 64 + "\n")
