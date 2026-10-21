@@ -16,6 +16,7 @@ from applications.serializers import (
     PublicJobDetailSerializer,
     ApplicationPublicCreateSerializer,
     ApplicationBlindSerializer,
+    ApplicationRevealedSerializer,
     POLICY_VERSION,
 )
 from applications.tasks import process_cv
@@ -158,11 +159,23 @@ class PublicApplyView(APIView):
 class ApplicationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     HR authenticated viewset for applications.
-    Returns blind representation for Round 1 screening.
-    Supports retry action for failed CV processing.
+    Returns blind representation during early rounds (collecting, cv_review).
+    Reveals candidate identity after Round 1 invitations are sent.
+    Supports retry action for failed CV processing and advance action for review stages.
     """
-    serializer_class = ApplicationBlindSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        # Reveal candidate details only once job advances past cv_review
+        job_id = self.request.query_params.get('job')
+        if job_id:
+            try:
+                job = Job.objects.get(id=job_id, hr=self.request.user)
+                if job.stage not in ('draft', 'collecting', 'cv_review'):
+                    return ApplicationRevealedSerializer
+            except (Job.DoesNotExist, ValueError):
+                pass
+        return ApplicationBlindSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -174,6 +187,61 @@ class ApplicationViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Order by rank, score descending, then application time
         return queryset.order_by('-cv_score', 'applied_at')
+
+    @action(detail=True, methods=['patch'], url_path='advance')
+    def advance(self, request, pk=None):
+        """
+        PATCH /api/applications/<id>/advance/
+        Allows HR to toggle candidate advancement (advance_next: true | false)
+        during review stages (cv_review, ai_review, hr_review).
+        Enforces: total advancing count cannot exceed slot capacity.
+        """
+        app = self.get_object()
+        job = app.job
+        if job.hr != request.user:
+            return Response({"error": "Unauthorized."}, status=status.HTTP_403_FORBIDDEN)
+
+        if job.stage not in ('cv_review', 'ai_review', 'hr_review'):
+            return Response(
+                {"error": f"Candidates can only be adjusted during review stages. Current stage: '{job.stage}'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        advance_val = request.data.get('advance_next')
+        if advance_val is None:
+            return Response(
+                {"error": "'advance_next' field (boolean) is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        advance_next = bool(advance_val)
+
+        if advance_next and not app.advance_next:
+            from interviews.services import calculate_capacity
+            if job.stage == 'cv_review':
+                slot_capacity = calculate_capacity(job, 'ai')
+            elif job.stage == 'ai_review':
+                slot_capacity = calculate_capacity(job, 'hr')
+            else:
+                slot_capacity = 999999
+
+            current_advancing = Application.objects.filter(job=job, advance_next=True).count()
+            if current_advancing + 1 > slot_capacity:
+                return Response(
+                    {
+                        "error": f"Cannot include candidate: available slot capacity ({slot_capacity}) would be exceeded.",
+                        "slot_capacity": slot_capacity,
+                        "current_advancing": current_advancing,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        app.advance_next = advance_next
+        app.save(update_fields=['advance_next'])
+
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(app, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='retry')
     def retry(self, request, pk=None):
@@ -199,3 +267,4 @@ class ApplicationViewSet(viewsets.ReadOnlyModelViewSet):
             {"message": "CV processing has been queued for re-evaluation.", "status": "pending"},
             status=status.HTTP_200_OK
         )
+

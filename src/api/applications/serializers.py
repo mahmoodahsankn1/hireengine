@@ -99,3 +99,42 @@ class ApplicationBlindSerializer(serializers.ModelSerializer):
         if obj.cv_rank:
             return f"Candidate #{obj.cv_rank}"
         return f"Candidate #{str(obj.id)[:6].upper()}"
+
+class ApplicationRevealedSerializer(serializers.ModelSerializer):
+    candidate_label = serializers.SerializerMethodField()
+    resume_file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Application
+        fields = [
+            'id',
+            'candidate_label',
+            'full_name',
+            'email',
+            'phone',
+            'resume_file',
+            'resume_file_url',
+            'cv_score',
+            'score_breakdown',
+            'processing_status',
+            'processing_attempts',
+            'cv_rank',
+            'pipeline_status',
+            'advance_next',
+            'applied_at',
+            'anonymized_text',
+        ]
+
+    def get_candidate_label(self, obj) -> str:
+        if obj.cv_rank:
+            return f"Candidate #{obj.cv_rank}"
+        return f"Candidate #{str(obj.id)[:6].upper()}"
+
+    def get_resume_file_url(self, obj) -> str:
+        if obj.resume_file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.resume_file.url)
+            return obj.resume_file.url
+        return None
+

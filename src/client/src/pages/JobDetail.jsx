@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { 
   FileText, CheckCircle, AlertTriangle, RefreshCw, Eye, 
-  X, Sparkles, Award, Shield, User, ArrowRight 
+  X, Sparkles, Award, Shield, User, ArrowRight,
+  Send, CheckSquare, Square, Clock, Users, Mail, AlertCircle
 } from 'lucide-react'
 import api from '../services/api'
 import Navbar from '../components/Navbar'
@@ -35,12 +36,20 @@ export default function JobDetail() {
   const [selectedCandidate, setSelectedCandidate] = useState(null)
   const [retryingId, setRetryingId] = useState(null)
 
+  // Phase 4 Send & Advance States
+  const [advancingAppId, setAdvancingAppId] = useState(null)
+  const [showSendModal, setShowSendModal] = useState(false)
+  const [sendPreviewData, setSendPreviewData] = useState(null)
+  const [loadingSendPreview, setLoadingSendPreview] = useState(false)
+  const [sendingInvites, setSendingInvites] = useState(false)
+  const [sendRegret, setSendRegret] = useState(true)
+
   const { data: job, isLoading, error, refetch } = useQuery({
     queryKey: ['job-detail', id],
     queryFn: () => api.get(`/jobs/${id}/`).then(r => r.data),
   })
 
-  // Round 1 Applications Query
+  // Applications Query (enabled across round tabs)
   const { 
     data: applications = [], 
     isLoading: loadingApps, 
@@ -48,7 +57,7 @@ export default function JobDetail() {
   } = useQuery({
     queryKey: ['job-applications', id],
     queryFn: () => api.get(`/applications/?job=${id}`).then(r => r.data),
-    enabled: activeTab === 'round1',
+    enabled: activeTab === 'round1' || activeTab === 'round2' || activeTab === 'round3',
     refetchInterval: (query) => {
       const data = query.state.data
       if (Array.isArray(data) && data.some(a => a.processing_status === 'pending')) {
@@ -86,6 +95,55 @@ export default function JobDetail() {
     }
   }
 
+  // Phase 4: Toggle candidate advance inclusion
+  async function handleToggleAdvance(app) {
+    setAdvancingAppId(app.id)
+    try {
+      await api.patch(`/applications/${app.id}/advance/`, {
+        advance_next: !app.advance_next
+      })
+      refetchApps()
+      refetch()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to update candidate inclusion.')
+    } finally {
+      setAdvancingAppId(null)
+    }
+  }
+
+  // Phase 4: Open Send Preview Modal
+  async function openSendModal() {
+    setLoadingSendPreview(true)
+    setShowSendModal(true)
+    try {
+      const res = await api.get(`/jobs/${id}/send/`)
+      setSendPreviewData(res.data)
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to load invitation preview.')
+      setShowSendModal(false)
+    } finally {
+      setLoadingSendPreview(false)
+    }
+  }
+
+  // Phase 4: Confirm Send Action
+  async function handleConfirmSend() {
+    setSendingInvites(true)
+    try {
+      const res = await api.post(`/jobs/${id}/send/`, {
+        send_regret: sendRegret
+      })
+      alert(res.data.message || 'Invitations successfully sent!')
+      setShowSendModal(false)
+      refetch()
+      refetchApps()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to send invitations.')
+    } finally {
+      setSendingInvites(false)
+    }
+  }
+
   if (isLoading) return (
     <>
       <Navbar />
@@ -117,6 +175,11 @@ export default function JobDetail() {
   const doneCount = applications.filter(a => a.processing_status === 'done').length
   const failedCount = applications.filter(a => a.processing_status === 'failed').length
   const pendingCount = applications.filter(a => a.processing_status === 'pending').length
+  const advancingCount = applications.filter(a => a.advance_next).length
+
+  // Candidates for Round 2 and Round 3
+  const round2Apps = applications.filter(a => a.pipeline_status === 'ai_invited' || a.pipeline_status === 'hr_invited' || a.pipeline_status === 'selected')
+  const round3Apps = applications.filter(a => a.pipeline_status === 'hr_invited' || a.pipeline_status === 'selected')
 
   return (
     <>
@@ -144,6 +207,16 @@ export default function JobDetail() {
             {job.stage !== 'draft' && job.form_slug && (
               <button id="copy-link-btn" className="btn btn-secondary" onClick={copyLink}>📋 Copy Apply Link</button>
             )}
+            {['cv_review', 'ai_review', 'hr_review'].includes(job.stage) && (
+              <button 
+                id="header-send-btn"
+                className="btn btn-primary"
+                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)' }}
+                onClick={openSendModal}
+              >
+                <Send size={15} /> Send Invitations
+              </button>
+            )}
             <Link id="edit-btn" to={`/jobs/${id}/edit`} className="btn btn-secondary">✏️ Edit</Link>
           </div>
         </div>
@@ -153,8 +226,8 @@ export default function JobDetail() {
           {[
             { key: 'overview', label: 'Overview' },
             { key: 'round1',   label: `Round 1 · CV (${totalCount || job.applications_count || 0})` },
-            { key: 'round2',   label: 'Round 2 · AI' },
-            { key: 'round3',   label: 'Round 3 · HR' },
+            { key: 'round2',   label: `Round 2 · AI (${round2Apps.length})` },
+            { key: 'round3',   label: `Round 3 · HR (${round3Apps.length})` },
           ].map(t => (
             <button key={t.key} id={`tab-${t.key}`}
               className={`tab-btn ${activeTab === t.key ? 'active' : ''}`}
@@ -218,6 +291,53 @@ export default function JobDetail() {
         {/* Round 1 Tab: CV Review */}
         {activeTab === 'round1' && (
           <div>
+            {/* Round 1 CV Review Stage Action Banner */}
+            {job.stage === 'cv_review' && (
+              <div className="card" style={{ 
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(6,182,212,0.1) 100%)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                padding: '1.25rem 1.5rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <Sparkles size={18} color="var(--color-primary-light)" />
+                    <h3 style={{ fontSize: '1.1rem' }}>Round 1: CV Review Active</h3>
+                  </div>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    Applications are ranked by CV score. Review rankings, adjust which candidates advance, and click Send AI Invitations.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>AI Slots Capacity</div>
+                    <div style={{ 
+                      fontWeight: 700, 
+                      fontSize: '0.95rem',
+                      color: advancingCount > (job.ai_capacity || 0) ? 'var(--color-danger)' : 'var(--color-success)'
+                    }}>
+                      {advancingCount} advancing / {job.ai_capacity || 0} slots
+                    </div>
+                  </div>
+                  <button 
+                    id="send-ai-invites-btn" 
+                    className="btn btn-primary" 
+                    style={{ padding: '0.65rem 1.35rem', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }}
+                    disabled={advancingCount === 0 || advancingCount > (job.ai_capacity || 0)}
+                    onClick={openSendModal}
+                  >
+                    <Send size={15} /> Send AI Invitations
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Top Stat Metrics */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -295,6 +415,7 @@ export default function JobDetail() {
                   const isDone = app.processing_status === 'done'
                   const isFailed = app.processing_status === 'failed'
                   const isPending = app.processing_status === 'pending'
+                  const isPastCvReview = !['draft', 'collecting', 'cv_review'].includes(job.stage)
 
                   return (
                     <div 
@@ -309,17 +430,33 @@ export default function JobDetail() {
                         flexWrap: 'wrap',
                         borderLeft: isFailed 
                           ? '4px solid var(--color-danger)' 
-                          : isDone && score >= 75 
-                            ? '4px solid var(--color-success)' 
-                            : '4px solid var(--border-subtle)',
+                          : app.advance_next && job.stage === 'cv_review'
+                            ? '4px solid var(--color-primary)'
+                            : isDone && score >= 75 
+                              ? '4px solid var(--color-success)' 
+                              : '4px solid var(--border-subtle)',
                       }}
                     >
-                      {/* Left: Blind Info & Timestamp */}
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                      {/* Left: Candidate Info & Breakdown */}
+                      <div style={{ flex: '1 1 300px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                          {app.cv_rank && (
+                            <span className="badge badge-accent" style={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                              #{app.cv_rank}
+                            </span>
+                          )}
                           <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
-                            {app.candidate_label}
+                            {isPastCvReview && app.full_name ? app.full_name : app.candidate_label}
                           </span>
+                          {app.pipeline_status && app.pipeline_status !== 'applied' && (
+                            <span className={`badge ${
+                              app.pipeline_status === 'ai_invited' ? 'badge-warning' :
+                              app.pipeline_status === 'hr_invited' ? 'badge-primary' :
+                              app.pipeline_status === 'selected' ? 'badge-success' : 'badge-danger'
+                            }`} style={{ fontSize: '0.75rem', textTransform: 'capitalize' }}>
+                              {app.pipeline_status.replace('_', ' ')}
+                            </span>
+                          )}
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                             Applied {formatDate(app.applied_at)}
                           </span>
@@ -356,10 +493,10 @@ export default function JobDetail() {
                         )}
                       </div>
 
-                      {/* Right: Score Badge & Actions */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      {/* Right: Actions, Score & Advance Toggle */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                         {isDone && (
-                          <div style={{ textAlign: 'right' }}>
+                          <div style={{ textAlign: 'right', minWidth: '70px' }}>
                             <div style={{ 
                               fontSize: '1.5rem', 
                               fontWeight: 800, 
@@ -374,24 +511,46 @@ export default function JobDetail() {
                           </div>
                         )}
 
-                        {isFailed && (
-                          <span className="badge badge-danger" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}>
-                            Needs Attention
-                          </span>
+                        {/* Phase 4: Advance toggle during cv_review */}
+                        {job.stage === 'cv_review' && isDone && (
+                          <button
+                            id={`advance-toggle-${app.id}`}
+                            className={`btn ${app.advance_next ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ 
+                              fontSize: '0.8rem', 
+                              padding: '0.45rem 0.85rem',
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.4rem',
+                              border: app.advance_next ? 'none' : '1px solid var(--border-subtle)'
+                            }}
+                            disabled={advancingAppId === app.id}
+                            onClick={() => handleToggleAdvance(app)}
+                            title={app.advance_next ? "Click to exclude from Round 2" : "Click to include in Round 2"}
+                          >
+                            {advancingAppId === app.id ? (
+                              <div className="spinner" style={{ width: '0.85rem', height: '0.85rem' }} />
+                            ) : app.advance_next ? (
+                              <CheckSquare size={15} />
+                            ) : (
+                              <Square size={15} />
+                            )}
+                            {app.advance_next ? 'Advancing' : 'Excluded'}
+                          </button>
                         )}
 
-                        {/* Detail / Inspection Button */}
+                        {/* Inspect details button */}
                         {isDone && (
                           <button 
                             className="btn btn-secondary" 
-                            style={{ fontSize: '0.85rem', padding: '0.5rem 0.85rem' }}
+                            style={{ fontSize: '0.85rem', padding: '0.45rem 0.85rem' }}
                             onClick={() => setSelectedCandidate(app)}
                           >
                             <Eye size={15} /> Inspect
                           </button>
                         )}
 
-                        {/* Retry Button for Failed */}
+                        {/* Retry button for failed evaluation */}
                         {isFailed && (
                           <button 
                             className="btn btn-primary" 
@@ -413,126 +572,393 @@ export default function JobDetail() {
                 })}
               </div>
             )}
+          </div>
+        )}
 
-            {/* Candidate Inspection Modal */}
-            {selectedCandidate && (
-              <div 
-                style={{
-                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                  background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  zIndex: 9999, padding: '1rem'
-                }}
-                onClick={() => setSelectedCandidate(null)}
-              >
-                <div 
-                  className="card" 
-                  style={{
-                    maxWidth: '700px', width: '100%', maxHeight: '90vh',
-                    overflowY: 'auto', padding: '2rem', boxShadow: 'var(--shadow-card)'
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <h2 style={{ fontSize: '1.35rem' }}>{selectedCandidate.candidate_label}</h2>
-                        <span className="badge badge-primary">Blind Review</span>
-                      </div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        Applied on {formatDate(selectedCandidate.applied_at)}
-                      </span>
-                    </div>
-
-                    <button 
-                      onClick={() => setSelectedCandidate(null)} 
-                      style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                    >
-                      <X size={22} />
-                    </button>
+        {/* Round 2 Tab: AI Interviews */}
+        {activeTab === 'round2' && (
+          <div>
+            {job.stage === 'ai_review' && (
+              <div className="card" style={{ 
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(6,182,212,0.1) 100%)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                padding: '1.25rem 1.5rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <Sparkles size={18} color="var(--color-primary-light)" />
+                    <h3 style={{ fontSize: '1.1rem' }}>Round 2: AI Review Active</h3>
                   </div>
-
-                  {/* Rubric Breakdown Box */}
-                  <div style={{ background: 'var(--bg-surface)', padding: '1.25rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', border: '1px solid var(--border-card)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-                        <Award size={18} color="var(--color-primary-light)" /> AI Rubric Score
-                      </div>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-success)' }}>
-                        {selectedCandidate.cv_score} / 100
-                      </div>
-                    </div>
-
-                    {selectedCandidate.score_breakdown && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', textAlign: 'center', marginBottom: '1rem' }}>
-                        <div style={{ padding: '0.75rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Skills (max 50)</div>
-                          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedCandidate.score_breakdown.skills}</div>
-                        </div>
-                        <div style={{ padding: '0.75rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Experience (max 30)</div>
-                          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedCandidate.score_breakdown.experience}</div>
-                        </div>
-                        <div style={{ padding: '0.75rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Education (max 20)</div>
-                          <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedCandidate.score_breakdown.education}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedCandidate.score_breakdown?.reason && (
-                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.5', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}>
-                        <strong>Justification:</strong> {selectedCandidate.score_breakdown.reason}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Anonymized CV Text */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.95rem' }}>
-                      <Shield size={16} color="var(--color-accent)" /> Anonymized & Redacted CV
-                    </div>
-                    <div style={{ 
-                      background: 'var(--bg-input)', padding: '1rem', borderRadius: 'var(--radius-md)', 
-                      fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', 
-                      fontFamily: 'monospace', maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border-card)'
-                    }}>
-                      {selectedCandidate.anonymized_text || 'No anonymized text generated.'}
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
-                    <button className="btn btn-secondary" onClick={() => setSelectedCandidate(null)}>
-                      Close
-                    </button>
-                  </div>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    AI interviews are complete. Review candidate performance and send HR interview invitations.
+                  </p>
                 </div>
+
+                <button 
+                  className="btn btn-primary" 
+                  style={{ padding: '0.65rem 1.35rem' }}
+                  onClick={openSendModal}
+                >
+                  <Send size={15} /> Send HR Invitations
+                </button>
+              </div>
+            )}
+
+            {round2Apps.length === 0 ? (
+              <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
+                <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🤖</p>
+                <h3 style={{ marginBottom: '0.5rem' }}>No Candidates in Round 2 Yet</h3>
+                <p style={{ maxWidth: '480px', margin: '0 auto', color: 'var(--text-secondary)' }}>
+                  Once Round 1 CV screening is finished and invitations are sent, candidates will appear here for automated AI voice interviewing.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {round2Apps.map(app => (
+                  <div key={app.id} className="card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ fontWeight: 700 }}>{app.full_name || app.candidate_label}</span>
+                        <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>Round 2 (AI)</span>
+                        {app.email && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({app.email})</span>}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        CV Score: {app.cv_score}/100 • Applied: {formatDate(app.applied_at)}
+                      </div>
+                    </div>
+
+                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => setSelectedCandidate(app)}>
+                      <Eye size={14} /> View Details
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
 
-        {/* Round 2 Tab */}
-        {activeTab === 'round2' && (
-          <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-            <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🤖</p>
-            <h3 style={{ marginBottom: '0.5rem' }}>Round 2 — AI Interviews</h3>
-            <p style={{ maxWidth: 480, margin: '0 auto' }}>
-              AI interview scores, transcripts, and include/exclude controls will appear here
-              after invitations are sent (Phase 5).
-            </p>
+        {/* Round 3 Tab: HR Interviews */}
+        {activeTab === 'round3' && (
+          <div>
+            {job.stage === 'hr_review' && (
+              <div className="card" style={{ 
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(6,182,212,0.1) 100%)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                padding: '1.25rem 1.5rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <Sparkles size={18} color="var(--color-primary-light)" />
+                    <h3 style={{ fontSize: '1.1rem' }}>Round 3: HR Review Active</h3>
+                  </div>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    All HR video meetings have completed. Submit decisions and send final job offers and regrets.
+                  </p>
+                </div>
+
+                <button 
+                  className="btn btn-primary" 
+                  style={{ padding: '0.65rem 1.35rem' }}
+                  onClick={openSendModal}
+                >
+                  <Send size={15} /> Send Final Results
+                </button>
+              </div>
+            )}
+
+            {round3Apps.length === 0 ? (
+              <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
+                <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🎥</p>
+                <h3 style={{ marginBottom: '0.5rem' }}>No Candidates in Round 3 Yet</h3>
+                <p style={{ maxWidth: '480px', margin: '0 auto', color: 'var(--text-secondary)' }}>
+                  Candidates shortlisted after Round 2 will appear here for live video interviews with your hiring team.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {round3Apps.map(app => (
+                  <div key={app.id} className="card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ fontWeight: 700 }}>{app.full_name || app.candidate_label}</span>
+                        <span className={`badge ${app.pipeline_status === 'selected' ? 'badge-success' : 'badge-primary'}`} style={{ fontSize: '0.75rem' }}>
+                          {app.pipeline_status === 'selected' ? 'Selected' : 'HR Round'}
+                        </span>
+                        {app.email && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({app.email})</span>}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        CV Score: {app.cv_score}/100 • Applied: {formatDate(app.applied_at)}
+                      </div>
+                    </div>
+
+                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => setSelectedCandidate(app)}>
+                      <Eye size={14} /> View Details
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Round 3 Tab */}
-        {activeTab === 'round3' && (
-          <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-            <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🎥</p>
-            <h3 style={{ marginBottom: '0.5rem' }}>Round 3 — HR Interviews</h3>
-            <p style={{ maxWidth: 480, margin: '0 auto' }}>
-              Live video interview rooms, ratings, notes, and final decisions will appear here
-              (Phase 6).
-            </p>
+        {/* Candidate Inspection Modal */}
+        {selectedCandidate && (
+          <div 
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 9999, padding: '1rem'
+            }}
+            onClick={() => setSelectedCandidate(null)}
+          >
+            <div 
+              className="card" 
+              style={{
+                maxWidth: '700px', width: '100%', maxHeight: '90vh',
+                overflowY: 'auto', padding: '2rem', boxShadow: 'var(--shadow-card)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h2 style={{ fontSize: '1.35rem' }}>
+                      {selectedCandidate.full_name || selectedCandidate.candidate_label}
+                    </h2>
+                    {!selectedCandidate.full_name && <span className="badge badge-primary">Blind Review</span>}
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Applied on {formatDate(selectedCandidate.applied_at)}
+                  </span>
+                </div>
+
+                <button 
+                  onClick={() => setSelectedCandidate(null)} 
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* Rubric Breakdown Box */}
+              <div style={{ background: 'var(--bg-surface)', padding: '1.25rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', border: '1px solid var(--border-card)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+                    <Award size={18} color="var(--color-primary-light)" /> AI Rubric Score
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-success)' }}>
+                    {selectedCandidate.cv_score} / 100
+                  </div>
+                </div>
+
+                {selectedCandidate.score_breakdown && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', textAlign: 'center', marginBottom: '1rem' }}>
+                    <div style={{ padding: '0.75rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Skills (max 50)</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedCandidate.score_breakdown.skills}</div>
+                    </div>
+                    <div style={{ padding: '0.75rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Experience (max 30)</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedCandidate.score_breakdown.experience}</div>
+                    </div>
+                    <div style={{ padding: '0.75rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Education (max 20)</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedCandidate.score_breakdown.education}</div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedCandidate.score_breakdown?.reason && (
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.5', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}>
+                    <strong>Justification:</strong> {selectedCandidate.score_breakdown.reason}
+                  </div>
+                )}
+              </div>
+
+              {/* Anonymized CV Text */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.95rem' }}>
+                  <Shield size={16} color="var(--color-accent)" /> Anonymized & Redacted CV
+                </div>
+                <div style={{ 
+                  background: 'var(--bg-input)', padding: '1rem', borderRadius: 'var(--radius-md)', 
+                  fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', 
+                  fontFamily: 'monospace', maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border-card)'
+                }}>
+                  {selectedCandidate.anonymized_text || 'No anonymized text generated.'}
+                </div>
+              </div>
+
+              <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
+                <button className="btn btn-secondary" onClick={() => setSelectedCandidate(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Phase 4 Send Preview Modal */}
+        {showSendModal && (
+          <div 
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 9999, padding: '1rem'
+            }}
+            onClick={() => !sendingInvites && setShowSendModal(false)}
+          >
+            <div 
+              className="card" 
+              style={{
+                maxWidth: '650px', width: '100%', maxHeight: '90vh',
+                overflowY: 'auto', padding: '2rem', boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <Send size={22} color="var(--color-primary-light)" />
+                  <h2 style={{ fontSize: '1.35rem' }}>
+                    Send {sendPreviewData?.round_number === 1 ? 'AI Interview Invitations' : sendPreviewData?.round_number === 2 ? 'HR Interview Invitations' : 'Final Decisions'}
+                  </h2>
+                </div>
+                {!sendingInvites && (
+                  <button 
+                    onClick={() => setShowSendModal(false)} 
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    <X size={22} />
+                  </button>
+                )}
+              </div>
+
+              {loadingSendPreview ? (
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                  <div className="spinner" style={{ width: '2rem', height: '2rem', margin: '0 auto 1rem' }} />
+                  <p>Calculating clash-free interview slots & preparing preview...</p>
+                </div>
+              ) : sendPreviewData ? (
+                <div>
+                  {/* Shortfall Error Banner if insufficient slots */}
+                  {sendPreviewData.shortfall > 0 && (
+                    <div className="alert alert-error" style={{ marginBottom: '1.25rem' }}>
+                      <AlertTriangle size={18} />
+                      <div>
+                        <strong>Insufficient Interview Slots!</strong>
+                        <p style={{ fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                          You have a shortfall of <strong>{sendPreviewData.shortfall} slot(s)</strong>.
+                          Please exclude {sendPreviewData.shortfall} candidate(s) or add more availability windows in Job Settings.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Advancing Candidates List */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Advancing Candidates ({sendPreviewData.advancing_count})</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+                        {sendPreviewData.total_available_slots} total slots available
+                      </span>
+                    </h4>
+                    
+                    <div style={{ 
+                      display: 'flex', flexDirection: 'column', gap: '0.5rem', 
+                      maxHeight: '220px', overflowY: 'auto', background: 'var(--bg-surface)', 
+                      padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-card)' 
+                    }}>
+                      {(sendPreviewData.advancing || []).map((cand, idx) => (
+                        <div key={cand.application_id || idx} style={{ 
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                          padding: '0.5rem 0.75rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)',
+                          fontSize: '0.85rem'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: 600 }}>{cand.candidate_label}</span>
+                            {cand.full_name && <span style={{ color: 'var(--text-secondary)' }}>({cand.full_name})</span>}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            {cand.start_at_formatted ? (
+                              <span style={{ color: 'var(--color-accent)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <Clock size={13} /> {cand.start_at_formatted}
+                              </span>
+                            ) : (
+                              <span className="badge badge-danger" style={{ fontSize: '0.75rem' }}>No slot</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Regret notice */}
+                  {sendPreviewData.rejected_count > 0 && (
+                    <div style={{ 
+                      background: 'var(--bg-input)', padding: '1rem', borderRadius: 'var(--radius-md)', 
+                      marginBottom: '1.5rem', border: '1px solid var(--border-card)' 
+                    }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={sendRegret} 
+                          onChange={(e) => setSendRegret(e.target.checked)}
+                          style={{ width: '1.1rem', height: '1.1rem', accentColor: 'var(--color-primary)' }}
+                        />
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          Send polite regret emails to {sendPreviewData.rejected_count} non-selected candidate(s)
+                        </span>
+                      </label>
+                      <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginLeft: '1.85rem', marginTop: '0.25rem' }}>
+                        If unchecked, these candidates will be marked rejected without an email notification.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Modal Actions */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                    <button 
+                      className="btn btn-secondary" 
+                      onClick={() => setShowSendModal(false)} 
+                      disabled={sendingInvites}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      id="confirm-send-btn"
+                      className="btn btn-primary" 
+                      disabled={!sendPreviewData.can_send || sendingInvites || sendPreviewData.shortfall > 0}
+                      onClick={handleConfirmSend}
+                    >
+                      {sendingInvites ? (
+                        <>
+                          <div className="spinner" style={{ width: '1rem', height: '1rem' }} />
+                          Scheduling & Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={15} /> Confirm & Send Invitations
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         )}
       </div>

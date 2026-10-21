@@ -8,6 +8,8 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
+        if 'timezone' in extra_fields:
+            extra_fields['tz'] = extra_fields.pop('timezone')
         user = self.model(email=email, **extra_fields)
         if password:
             user.set_password(password)
@@ -40,11 +42,20 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['full_name', 'company_name']
 
+    @property
+    def timezone(self):
+        return self.tz
+
+    @timezone.setter
+    def timezone(self, value):
+        self.tz = value
+
     class Meta:
         db_table = 'users'
 
     def __str__(self):
         return self.email
+
 
 class EmailOTP(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
