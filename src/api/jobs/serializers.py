@@ -96,15 +96,15 @@ class JobSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({
                         "required_skills": "Required skills cannot be edited once applications exist."
                     })
-
-            if 'application_deadline' in attrs and attrs['application_deadline'] < instance.application_deadline:
-                raise serializers.ValidationError({
-                    "application_deadline": "Application deadline cannot be shortened once set. You may only extend it."
-                })
+                if 'application_deadline' in attrs and attrs['application_deadline'] < instance.application_deadline:
+                    raise serializers.ValidationError({
+                        "application_deadline": "Application deadline cannot be shortened once applications exist. You may only extend it."
+                    })
 
         # Windows validation
         windows_data = attrs.get('availability_windows', None)
         if windows_data is not None and deadline:
+            from datetime import timedelta
             ai_windows = []
             hr_windows = []
 
@@ -118,9 +118,10 @@ class JobSerializer(serializers.ModelSerializer):
                         "availability_windows": f"Window #{idx + 1}: End time must be after start time."
                     })
 
-                if start and start < deadline:
+                # Allow windows starting at or after the application deadline (with 59s tolerance)
+                if start and start < (deadline - timedelta(seconds=59)):
                     raise serializers.ValidationError({
-                        "availability_windows": f"Window #{idx + 1}: Availability windows must start after the application deadline."
+                        "availability_windows": f"Window #{idx + 1}: Availability window must start at or after the application deadline."
                     })
 
                 if r == 2:

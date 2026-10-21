@@ -30,7 +30,10 @@ const defaultForm = {
 
 function localDatetimeValue(dt) {
   if (!dt) return ''
-  return new Date(dt).toISOString().slice(0, 16)
+  const d = new Date(dt)
+  // Use LOCAL time components so datetime-local input shows and submits the correct timezone
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function CapacityBadge({ count, required, label }) {
@@ -130,6 +133,24 @@ export default function JobForm() {
     setter(ws => ws.map((w, idx) => idx === i ? { ...w, [field]: val } : w))
   }
 
+  function extractErrorMessage(val) {
+    if (!val) return ''
+    if (typeof val === 'string') return val
+    if (Array.isArray(val)) {
+      return val.map(extractErrorMessage).filter(Boolean).join(' ')
+    }
+    if (typeof val === 'object') {
+      return Object.entries(val)
+        .map(([k, v]) => {
+          const msg = extractErrorMessage(v)
+          return msg ? (k === 'non_field_errors' || k === 'detail' ? msg : `${k}: ${msg}`) : ''
+        })
+        .filter(Boolean)
+        .join(' ')
+    }
+    return String(val)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
@@ -175,15 +196,16 @@ export default function JobForm() {
       }
       setCapacity({ ai: res.data.ai_capacity, hr: res.data.hr_capacity })
       navigate('/dashboard')
+
     } catch (err) {
       const data = err.response?.data
       if (data && typeof data === 'object') {
         const fieldErrors = {}
         for (const [key, val] of Object.entries(data)) {
-          fieldErrors[key] = Array.isArray(val) ? val[0] : (typeof val === 'string' ? val : JSON.stringify(val))
+          fieldErrors[key] = extractErrorMessage(val)
         }
         setErrors(fieldErrors)
-        setServerError('Please fix the errors below.')
+        setServerError(fieldErrors.non_field_errors || fieldErrors.detail || 'Please fix the errors below.')
       } else {
         setServerError('Something went wrong. Please try again.')
       }

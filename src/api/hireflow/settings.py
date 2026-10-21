@@ -12,6 +12,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-producti
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(',') if host.strip()]
+if '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.extend(['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.io', '.ngrok.app', 'localhost', '127.0.0.1', '*'])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -132,12 +134,35 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# CORS settings
+# CORS & CSRF settings
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',') if origin.strip()
 ]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/.*\.vercel\.app$",
+    r"^https:\/\/.*\.ngrok-free\.app$",
+    r"^https:\/\/.*\.ngrok-free\.dev$",
+    r"^https:\/\/.*\.ngrok\.io$",
+    r"^https:\/\/.*\.ngrok\.app$",
+]
 CORS_ALLOW_CREDENTIALS = True
+
+csrf_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if csrf_env:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_env.split(',') if origin.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'https://*.ngrok-free.app',
+        'https://*.ngrok-free.dev',
+        'https://*.ngrok.io',
+        'https://*.ngrok.app',
+        'https://*.vercel.app',
+    ]
 
 # Celery Configuration
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
@@ -183,11 +208,24 @@ LIVEKIT_URL = os.getenv('LIVEKIT_URL', '')
 LIVEKIT_API_KEY = os.getenv('LIVEKIT_API_KEY', '')
 LIVEKIT_API_SECRET = os.getenv('LIVEKIT_API_SECRET', '')
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' if not DEBUG else 'django.core.mail.backends.console.EmailBackend'
+_has_smtp_creds = bool(
+    os.getenv('SMTP_USER')
+    and os.getenv('SMTP_USER') not in ('your-email@example.com', '')
+    and os.getenv('SMTP_PASSWORD')
+    and os.getenv('SMTP_PASSWORD') not in ('your-app-password', '')
+)
+
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.smtp.EmailBackend'
+    if (not DEBUG or _has_smtp_creds)
+    else 'django.core.mail.backends.console.EmailBackend'
+)
 EMAIL_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))
 EMAIL_USE_TLS = os.getenv('SMTP_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 EMAIL_HOST_USER = os.getenv('SMTP_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@hireflow.local')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('SMTP_USER') or 'noreply@hireflow.local')
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+

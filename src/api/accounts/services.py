@@ -68,7 +68,7 @@ def verify_otp(email: str, code: str) -> User:
 
     return user
 
-def resend_otp(email: str) -> None:
+def resend_otp(email: str) -> str:
     """
     Resends OTP if at least 60 seconds have elapsed since the last OTP creation.
     """
@@ -90,4 +90,5 @@ def resend_otp(email: str) -> None:
                 "retry_after": remaining_seconds
             })
 
-    generate_and_send_otp(user)
+    return generate_and_send_otp(user)
+

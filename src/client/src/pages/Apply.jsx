@@ -7,7 +7,12 @@ import {
   CheckCircle, AlertCircle, FileText, Check, ShieldCheck 
 } from 'lucide-react'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const rawApiUrl = import.meta.env.VITE_API_URL
+const API_BASE = (() => {
+  if (!rawApiUrl) return '/api'
+  const trimmed = rawApiUrl.trim().replace(/\/+$/, '')
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+})()
 
 function formatDate(dt) {
   if (!dt) return '—'
@@ -34,7 +39,9 @@ export default function Apply() {
   const { data: job, isLoading, error } = useQuery({
     queryKey: ['public-job-form', slug],
     queryFn: async () => {
-      const res = await axios.get(`${API_BASE}/forms/${slug}/`)
+      const res = await axios.get(`${API_BASE}/forms/${slug}/`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       return res.data
     },
     retry: 1,
@@ -99,6 +106,7 @@ export default function Apply() {
       const res = await axios.post(`${API_BASE}/apply/${slug}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'ngrok-skip-browser-warning': 'true',
         },
       })
       setSuccessData(res.data)

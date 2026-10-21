@@ -14,6 +14,7 @@ export default function VerifyOtp() {
   const [loading, setLoading] = useState(false)
   const [resendMsg, setResendMsg] = useState('')
   const [cooldown, setCooldown]   = useState(0)
+  const [devOtp, setDevOtp] = useState(location.state?.dev_otp || '')
   const inputRefs = useRef([])
 
   // Redirect back if no email in state
@@ -76,7 +77,10 @@ export default function VerifyOtp() {
     setResendMsg('')
     setError('')
     try {
-      await api.post('/accounts/resend-otp/', { email })
+      const res = await api.post('/accounts/resend-otp/', { email })
+      if (res.data?.dev_otp) {
+        setDevOtp(res.data.dev_otp)
+      }
       setResendMsg('A new code has been sent to your email.')
       setCooldown(60)
     } catch (err) {
@@ -102,6 +106,48 @@ export default function VerifyOtp() {
             <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>
           </p>
         </div>
+
+        {devOtp && (
+          <div
+            className="alert"
+            style={{
+              marginBottom: '1rem',
+              backgroundColor: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              color: '#38bdf8',
+              borderRadius: '8px',
+              padding: '0.75rem 1rem',
+              fontSize: '0.875rem'
+            }}
+          >
+            <div>
+              🛠️ <strong>Dev Mode (Console Mailer):</strong> Verification code is{' '}
+              <strong style={{ letterSpacing: '2px', color: '#f8fafc', fontSize: '1rem', marginLeft: '4px' }}>
+                {devOtp}
+              </strong>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const chars = devOtp.slice(0, 6).split('')
+                setDigits(chars)
+              }}
+              style={{
+                marginTop: '0.4rem',
+                background: 'rgba(56, 189, 248, 0.2)',
+                border: '1px solid rgba(56, 189, 248, 0.5)',
+                color: '#f8fafc',
+                borderRadius: '4px',
+                padding: '3px 10px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              Auto-fill code
+            </button>
+          </div>
+        )}
 
         {error  && <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{error}</div>}
         {resendMsg && <div className="alert alert-success" style={{ marginBottom: '1rem' }}>{resendMsg}</div>}

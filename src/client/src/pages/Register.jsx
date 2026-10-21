@@ -26,9 +26,9 @@ export default function Register() {
     setLoading(true)
     setServerError('')
     try {
-      await api.post('/accounts/register/', form)
-      // Navigate to OTP verification with email state
-      navigate('/verify-otp', { state: { email: form.email } })
+      const res = await api.post('/accounts/register/', form)
+      // Navigate to OTP verification with email state and optional dev_otp
+      navigate('/verify-otp', { state: { email: form.email, dev_otp: res.data?.dev_otp } })
     } catch (err) {
       const data = err.response?.data
       if (data && typeof data === 'object') {

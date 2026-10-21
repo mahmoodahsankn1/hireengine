@@ -97,17 +97,17 @@ class InterviewAllocatorTests(TestCase):
         self.assertEqual(slots[1], slots[0] + timedelta(minutes=8))
 
     def test_earliest_slot_rule(self):
-        # A window starting only 30 minutes in the future should not yield slots earlier than now + 60 min
+        # A window starting only 30 seconds in the future should not yield slots earlier than now + 1 min
         early_window = AvailabilityWindow.objects.create(
             job=self.job,
             round=2,
-            start_at=self.now + timedelta(minutes=15),
+            start_at=self.now + timedelta(seconds=30),
             end_at=self.now + timedelta(minutes=90),
         )
         slots = generate_slots(self.job, 'ai', windows_override=[early_window], current_time=self.now)
-        # Earliest slot must be >= now + 60 mins
+        # Earliest slot must be >= now + 1 min (grace period)
         for s in slots:
-            self.assertGreaterEqual(s, self.now + timedelta(minutes=60))
+            self.assertGreaterEqual(s, self.now + timedelta(minutes=1))
 
     def test_allocate_successful_and_rank_ordered(self):
         apps = [self.app1, self.app2, self.app3]

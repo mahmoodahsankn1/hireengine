@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -25,16 +26,17 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
 
         # Generate and dispatch OTP email
-        generate_and_send_otp(user)
+        code = generate_and_send_otp(user)
 
-        return Response(
-            {
-                "message": "Registration successful. A 6-digit verification code has been sent to your email.",
-                "email": user.email,
-                "user_id": str(user.id),
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        data = {
+            "message": "Registration successful. A 6-digit verification code has been sent to your email.",
+            "email": user.email,
+            "user_id": str(user.id),
+        }
+        if settings.DEBUG and settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+            data["dev_otp"] = code
+
+        return Response(data, status=status.HTTP_201_CREATED)
 
 class VerifyOtpView(APIView):
     permission_classes = [AllowAny]
@@ -71,11 +73,15 @@ class ResendOtpView(APIView):
         serializer = ResendOtpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        resend_otp(serializer.validated_data['email'])
+        code = resend_otp(serializer.validated_data['email'])
 
-        return Response({
+        data = {
             "message": "A new verification code has been sent to your email."
-        }, status=status.HTTP_200_OK)
+        }
+        if settings.DEBUG and settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+            data["dev_otp"] = code
+
+        return Response(data, status=status.HTTP_200_OK)
 
 class LoginView(TokenObtainPairView):
     permission_classes = [AllowAny]

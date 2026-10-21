@@ -47,7 +47,8 @@ def generate_slots(job, kind, windows_override=None, current_time=None, exclude_
     slot_total = dur + buf
 
     now = current_time or timezone.now()
-    earliest = now + timedelta(minutes=60)
+    # Small grace period to avoid scheduling slots in the literal past
+    earliest = now + timedelta(minutes=1)
 
     # Resolve windows
     if windows_override is not None:
