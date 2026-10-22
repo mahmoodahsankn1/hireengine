@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { BrandLogo } from './common/BrandLogo'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -17,9 +18,8 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <Link to="/dashboard" className="navbar-brand">
-          <span className="logo-dot" />
-          HireFlow
+        <Link to="/dashboard" className="navbar-brand" aria-label="HireFlow HR dashboard">
+          <BrandLogo className="navbar-brand-content" />
         </Link>
 
         <div className="navbar-spacer" />

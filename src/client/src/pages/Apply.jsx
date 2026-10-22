@@ -6,6 +6,7 @@ import {
   Briefcase, MapPin, Clock, Calendar, UploadCloud, 
   CheckCircle, AlertCircle, FileText, Check, ShieldCheck 
 } from 'lucide-react'
+import { Button } from '../components/common/Button'
 
 const rawApiUrl = import.meta.env.VITE_API_URL
 const API_BASE = (() => {
@@ -279,7 +280,7 @@ export default function Apply() {
                 <input 
                   id="fullName" 
                   type="text" 
-                  className="input" 
+                  className="form-input"
                   placeholder="e.g. John Doe"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -287,13 +288,13 @@ export default function Apply() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <div className="apply-contact-grid">
                 <div>
                   <label className="form-label" htmlFor="email">Email Address *</label>
                   <input 
                     id="email" 
                     type="email" 
-                    className="input" 
+                    className="form-input"
                     placeholder="john@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -305,7 +306,7 @@ export default function Apply() {
                   <input 
                     id="phone" 
                     type="tel" 
-                    className="input" 
+                    className="form-input"
                     placeholder="e.g. +91 9876543210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -367,7 +368,7 @@ export default function Apply() {
               </div>
 
               {/* Mandatory Consent Checkbox */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <div className="apply-compliance-notice" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <input 
                   id="consentCheckbox"
                   type="checkbox"
@@ -385,12 +386,11 @@ export default function Apply() {
               </div>
 
               {/* Submit Button */}
-              <button 
+              <Button
                 id="apply-submit-btn"
                 type="submit" 
-                className="btn btn-primary" 
+                className="apply-submit"
                 disabled={submitting}
-                style={{ padding: '0.875rem', fontSize: '1rem', marginTop: '0.5rem', width: '100%', justifyContent: 'center' }}
               >
                 {submitting ? (
                   <>
@@ -400,7 +400,7 @@ export default function Apply() {
                 ) : (
                   'Submit Application →'
                 )}
-              </button>
+              </Button>
 
             </form>
           </div>

@@ -2,18 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import Navbar from '../components/Navbar'
+import { StatusBadge } from '../components/common/StatusBadge'
 import { useAuth } from '../context/AuthContext'
 
 const STAGE_LABELS = {
   draft: 'Draft', collecting: 'Collecting', cv_review: 'CV Review',
   ai_interview: 'AI Interview', ai_review: 'AI Review',
   hr_interview: 'HR Interview', hr_review: 'HR Review', completed: 'Completed'
-}
-
-const STAGE_BADGE = {
-  draft: 'badge-muted', collecting: 'badge-accent', cv_review: 'badge-primary',
-  ai_interview: 'badge-warning', ai_review: 'badge-warning',
-  hr_interview: 'badge-primary', hr_review: 'badge-primary', completed: 'badge-success'
 }
 
 function formatDate(dt) {
@@ -120,9 +115,7 @@ export default function Dashboard() {
               <div key={job.id} className="job-card" onClick={() => navigate(`/jobs/${job.id}`)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span className="job-card-title">{job.title}</span>
-                  <span className={`badge ${STAGE_BADGE[job.stage] || 'badge-muted'}`}>
-                    {STAGE_LABELS[job.stage] || job.stage}
-                  </span>
+                  <StatusBadge stage={job.stage} label={STAGE_LABELS[job.stage] || job.stage} />
                 </div>
 
                 <div className="job-card-meta">
