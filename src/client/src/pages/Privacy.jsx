@@ -27,7 +27,7 @@ export default function Privacy() {
               alignItems: 'center',
               gap: '0.35rem'
             }}>
-              <Shield size={14} /> HireFlow Candidate Privacy Policy
+              <Shield size={14} /> HireEngine Candidate Privacy Policy
             </span>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Version 1.0 (Active)</span>
           </div>
@@ -35,7 +35,7 @@ export default function Privacy() {
             Privacy & Automated Processing Notice
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: '1.6' }}>
-            HireFlow is dedicated to transparent, fair, and secure hiring. This policy explains how we collect, process, 
+            HireEngine is dedicated to transparent, fair, and secure hiring. This policy explains how we collect, process,
             anonymize, and safeguard your data during the recruitment lifecycle.
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function Privacy() {
               <h2 style={{ fontSize: '1.25rem' }}>2. AI Redaction & Blind Screening</h2>
             </div>
             <p style={{ marginBottom: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.925rem' }}>
-              To prevent bias, HireFlow applies automated redaction before human recruiters review Round 1 applications:
+              To prevent bias, HireEngine applies automated redaction before human recruiters review Round 1 applications:
             </p>
             <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', fontSize: '0.925rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <li><strong>Automatic PII Stripping:</strong> Candidate names, emails, phone numbers, addresses, social links, gender pronouns, and demographic markers are programmatically redacted.</li>
@@ -88,7 +88,7 @@ export default function Privacy() {
               <h2 style={{ fontSize: '1.25rem' }}>3. Human-in-the-Loop Decision Making</h2>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem' }}>
-              Artificial intelligence outputs in HireFlow are <strong>strictly advisory</strong>. No candidate is ever automatically rejected 
+              Artificial intelligence outputs in HireEngine are <strong>strictly advisory</strong>. No candidate is ever automatically rejected
               or advanced solely by an algorithm. All shortlisting, interview invitations, and final hiring selections require 
               an explicit decision and button press by the employer's HR team.
             </p>
@@ -113,7 +113,7 @@ export default function Privacy() {
 
         {/* Footer info */}
         <div style={{ textAlign: 'center', marginTop: '2.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          HireFlow Hiring Engine · Academic Mini Project · All rights reserved.
+          HireEngine Hiring Engine · Academic Mini Project · All rights reserved.
         </div>
 
       </div>

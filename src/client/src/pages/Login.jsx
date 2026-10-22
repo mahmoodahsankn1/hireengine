@@ -46,7 +46,7 @@ export default function Login() {
         <div className="auth-logo">
           <BrandLogo className="auth-brand-logo" />
           <h1>Welcome back</h1>
-          <p>Sign in to your HireFlow account</p>
+          <p>Sign in to your HireEngine account</p>
         </div>
 
         {error && (

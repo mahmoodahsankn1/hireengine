@@ -1,6 +1,6 @@
 """
 AI Services Module.
-Per HireFlow Implementation Rules:
+Per HireEngine Implementation Rules:
 ALL OpenAI calls only in ai/.
 Uses structured JSON output, lowest-variance settings (temperature=0.0), and fixed prompts.
 """

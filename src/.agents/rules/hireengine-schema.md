@@ -1,9 +1,9 @@
 ---
 trigger: model_decision
-description: PostgreSQL schema, constraints, enums and the interview clash rule for HireFlow. Use when writing models, migrations, queries, serializers or anything touching the database.
+description: PostgreSQL schema, constraints, enums and the interview clash rule for HireEngine. Use when writing models, migrations, queries, serializers or anything touching the database.
 ---
 
-# HireFlow HR — Database Rules (PostgreSQL)
+# HireEngine HR — Database Rules (PostgreSQL)
 UUID PKs, TIMESTAMPTZ (UTC). Needs `btree_gist`. No pgvector/embeddings. Follow exactly; change only with approval.
 
 ## users (HR)

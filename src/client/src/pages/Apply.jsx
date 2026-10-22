@@ -380,7 +380,7 @@ export default function Apply() {
                 <label htmlFor="consentCheckbox" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.5', cursor: 'pointer' }}>
                   I consent to the collection and automated processing of my resume in accordance with the{' '}
                   <Link to="/privacy" target="_blank" style={{ color: 'var(--text-link)', textDecoration: 'underline' }}>
-                    HireFlow Privacy Policy
+                    HireEngine Privacy Policy
                   </Link>. I understand that personal details will be anonymized before evaluation.
                 </label>
               </div>

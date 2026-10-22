@@ -11,7 +11,7 @@ from accounts.services import generate_and_send_otp, verify_otp, resend_otp
 class AccountAndOTPTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.email = 'hr_test@hireflow.dev'
+        self.email = 'hr_test@hireengine.dev'
         self.password = 'StrongPass123!'
         self.user = User.objects.create_user(
             email=self.email,

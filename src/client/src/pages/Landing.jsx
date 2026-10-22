@@ -23,12 +23,12 @@ export default function Landing() {
   return (
     <main className="landing">
       <header className="landing-header">
-        <Link to="/" className="landing-brand" aria-label="HireFlow home">
+        <Link to="/" className="landing-brand" aria-label="HireEngine home">
           <BrandLogo />
         </Link>
         <nav className="landing-nav" aria-label="Main navigation">
           <a href="#how-it-works">How it works</a>
-          <a href="#built-for-people">Why HireFlow</a>
+          <a href="#built-for-people">Why HireEngine</a>
         </nav>
         <div className="landing-header-actions">
           <Link className="landing-login-link" to="/login">Log in</Link>
@@ -55,7 +55,7 @@ export default function Landing() {
           </p>
           <div className="landing-hero-actions">
             <Link className="landing-primary-cta" to="/login">
-              Log in to HireFlow <ArrowRight size={18} aria-hidden="true" />
+              Log in to HireEngine <ArrowRight size={18} aria-hidden="true" />
             </Link>
             <a className="landing-secondary-cta" href="#how-it-works">
               <CirclePlay size={19} aria-hidden="true" /> See how it works
@@ -67,7 +67,7 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="landing-visual" aria-label="A preview of the HireFlow candidate dashboard">
+        <div className="landing-visual" aria-label="A preview of the HireEngine candidate dashboard">
           <div className="landing-orbit landing-orbit-one" />
           <div className="landing-orbit landing-orbit-two" />
           <div className="landing-float-tag">
@@ -145,7 +145,7 @@ export default function Landing() {
       </section>
 
       <footer className="landing-footer">
-        <Link to="/" className="landing-brand" aria-label="HireFlow home"><BrandLogo /></Link>
+        <Link to="/" className="landing-brand" aria-label="HireEngine home"><BrandLogo /></Link>
         <span>Better hiring starts with better flow.</span>
         <Link to="/login">Log in <ArrowRight size={14} aria-hidden="true" /></Link>
       </footer>

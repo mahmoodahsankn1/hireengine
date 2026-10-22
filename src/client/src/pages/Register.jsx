@@ -53,7 +53,7 @@ export default function Register() {
         <div className="auth-logo">
           <BrandLogo className="auth-brand-logo" />
           <h1>Create your account</h1>
-          <p>Set up HireFlow for your company</p>
+          <p>Set up HireEngine for your company</p>
         </div>
 
         {serverError && (

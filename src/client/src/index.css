@@ -726,7 +726,7 @@ p { color: var(--text-secondary); }
   animation: pulse-ring 2s infinite ease-in-out;
 }
 
-/* ── HireFlow reusable components ───────────────────────── */
+/* ── HireEngine reusable components ───────────────────────── */
 .card,
 .stat-card,
 .job-card {

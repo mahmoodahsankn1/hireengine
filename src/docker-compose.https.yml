@@ -3,10 +3,10 @@ version: '3.8'
 services:
   db:
     image: postgres:16-alpine
-    container_name: hireflow_db
+    container_name: hireengine_db
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME:-hireflow}
+      POSTGRES_DB: ${DB_NAME:-hireengine}
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
@@ -16,7 +16,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: hireflow_redis
+    container_name: hireengine_redis
     restart: always
     ports:
       - "6379:6379"
@@ -27,7 +27,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: hireflow_api
+    container_name: hireengine_api
     restart: always
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
@@ -50,9 +50,9 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: hireflow_celery_worker
+    container_name: hireengine_celery_worker
     restart: always
-    command: celery -A hireflow worker -l info
+    command: celery -A hireengine worker -l info
     volumes:
       - ./api:/app
     env_file:
@@ -71,9 +71,9 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: hireflow_celery_beat
+    container_name: hireengine_celery_beat
     restart: always
-    command: celery -A hireflow beat -l info
+    command: celery -A hireengine beat -l info
     volumes:
       - ./api:/app
     env_file:
@@ -92,7 +92,7 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
-    container_name: hireflow_client
+    container_name: hireengine_client
     restart: always
     expose:
       - "80"
@@ -101,7 +101,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: hireflow_nginx_https
+    container_name: hireengine_nginx_https
     restart: always
     ports:
       - "80:80"

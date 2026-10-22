@@ -231,7 +231,7 @@ export default function AIInterviewRoom() {
           type: 'response.create',
           response: {
             modalities: ['text', 'audio'],
-            instructions: 'Greet the candidate warmly, state your role as HireFlow AI Interviewer, and ask the first technical question based on the job requirements.'
+            instructions: 'Greet the candidate warmly, state your role as HireEngine AI Interviewer, and ask the first technical question based on the job requirements.'
           }
         }
         dc.send(JSON.stringify(initialGreet))
@@ -663,7 +663,7 @@ export default function AIInterviewRoom() {
           </div>
 
           <h3 style={{ fontSize: '1.2rem', marginBottom: '0.25rem' }}>
-            HireFlow AI Technical Interviewer
+            HireEngine AI Technical Interviewer
           </h3>
           <p style={{ fontSize: '0.85rem', color: aiSpeaking ? 'var(--color-accent)' : userSpeaking ? 'var(--color-success)' : 'var(--text-muted)' }}>
             {aiSpeaking ? 'Speaking...' : userSpeaking ? 'Listening to you...' : 'Listening... Speak naturally.'}

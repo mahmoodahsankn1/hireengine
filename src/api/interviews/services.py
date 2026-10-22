@@ -164,7 +164,7 @@ def preview_allocation(job, kind, apps, current_time=None):
 
 def allocate(job, kind, apps, current_time=None):
     """
-    Allocates interview slots to candidates per HireFlow SRS & Architecture rules:
+    Allocates interview slots to candidates per HireEngine SRS & Architecture rules:
     - Slots generated chronologically from windows (earliest >= now + 60 min)
     - Free of conflicts with other non-cancelled interviews of same HR and kind
     - Apps assigned in rank order: best candidate gets earliest slot

@@ -172,14 +172,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.NOTICE("[*] Starting HireFlow Demo Data Seeding..."))
+        self.stdout.write(self.style.NOTICE("[*] Starting HireEngine Demo Data Seeding..."))
 
         reset = options.get('reset')
         deadline_minutes = options.get('deadline_minutes', 5)
         past_deadline = options.get('past_deadline')
         skip_processing = options.get('skip_processing')
 
-        hr_email = "demo@hireflow.dev"
+        hr_email = "demo@hireengine.dev"
         hr_password = "DemoPassword123!"
 
         if reset:
@@ -342,7 +342,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.WARNING(f"    [!] Could not score {app.full_name}: {exc}"))
 
         self.stdout.write("\n" + "=" * 64)
-        self.stdout.write(self.style.SUCCESS("HireFlow Phase 7 Seed Data Completed Successfully!"))
+        self.stdout.write(self.style.SUCCESS("HireEngine Phase 7 Seed Data Completed Successfully!"))
         self.stdout.write("=" * 64)
         self.stdout.write(f"  * HR Login:      {hr_email}")
         frontend_url = getattr(settings, 'FRONTEND_URL', 'https://hireengine.vercel.app').rstrip('/')

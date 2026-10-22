@@ -1,11 +1,11 @@
-# HireFlow HR — HTTPS Deployment Guide
+# HireEngine HR — HTTPS Deployment Guide
 
 ## Why HTTPS is Mandatory
 Modern web browsers (Chrome, Safari, Firefox, Edge) enforce the **Secure Context** standard for `navigator.mediaDevices.getUserMedia()`. 
 - **Microphone access** (AI technical interview via OpenAI Realtime voice)
 - **Camera + Microphone access** (HR video interview via LiveKit)
 
-These hardware APIs are **completely blocked** on non-localhost origins unless served over `https://`. When accessing HireFlow from mobile phones or other devices on a local area network (e.g. `http://192.168.1.x:5173`), the browser will refuse camera and microphone requests with `NotAllowedError` or `SecurityError`.
+These hardware APIs are **completely blocked** on non-localhost origins unless served over `https://`. When accessing HireEngine from mobile phones or other devices on a local area network (e.g. `http://192.168.1.x:5173`), the browser will refuse camera and microphone requests with `NotAllowedError` or `SecurityError`.
 
 Deploying with HTTPS ensures seamless operation for candidates and HR managers on any device.
 
@@ -13,7 +13,7 @@ Deploying with HTTPS ensures seamless operation for candidates and HR managers o
 
 ## 1. Local HTTPS Testing (Self-Signed Certificates)
 
-HireFlow includes automated certificate generators with **Subject Alternative Names (SAN)** for `localhost`, `127.0.0.1`, and `hireflow.local`.
+HireEngine includes automated certificate generators with **Subject Alternative Names (SAN)** for `localhost`, `127.0.0.1`, and `hireengine.local`.
 
 ### On Windows (PowerShell):
 ```powershell
@@ -57,20 +57,20 @@ docker compose -f docker-compose.https.yml up --build -d
 
 ## 3. Production Deployment with Let's Encrypt / Certbot
 
-For production servers with a registered public domain (e.g., `hireflow.yourdomain.com`):
+For production servers with a registered public domain (e.g., `hireengine.yourdomain.com`):
 
 1. Update `src/nginx/nginx.conf` with your real domain:
    ```nginx
-   server_name hireflow.yourdomain.com;
+   server_name hireengine.yourdomain.com;
    ```
 2. Request a free trusted certificate via Certbot:
    ```bash
-   sudo certbot certonly --standalone -d hireflow.yourdomain.com
+   sudo certbot certonly --standalone -d hireengine.yourdomain.com
    ```
 3. Symlink or copy the certificates:
    ```bash
-   cp /etc/letsencrypt/live/hireflow.yourdomain.com/fullchain.pem src/nginx/certs/cert.pem
-   cp /etc/letsencrypt/live/hireflow.yourdomain.com/privkey.pem src/nginx/certs/key.pem
+   cp /etc/letsencrypt/live/hireengine.yourdomain.com/fullchain.pem src/nginx/certs/cert.pem
+   cp /etc/letsencrypt/live/hireengine.yourdomain.com/privkey.pem src/nginx/certs/key.pem
    ```
 4. Start the stack:
    ```bash

@@ -151,7 +151,7 @@ class PublicApplyView(APIView):
                 "message": "Application submitted successfully! Your resume is being processed.",
                 "application_id": str(application.id),
                 "job_title": job.title,
-                "company_name": job.hr.company_name or "HireFlow",
+                "company_name": job.hr.company_name or "HireEngine",
             },
             status=status.HTTP_201_CREATED
         )

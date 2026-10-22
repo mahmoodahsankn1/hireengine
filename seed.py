@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Root convenience script to seed HireFlow demo data.
+Root convenience script to seed HireEngine demo data.
 Usage:
     python seed.py [--reset] [--deadline-minutes 5] [--past-deadline] [--skip-processing]
 """
@@ -15,7 +15,7 @@ if str(API_DIR) not in sys.path:
     sys.path.insert(0, str(API_DIR))
 
 os.chdir(str(API_DIR))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hireflow.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hireengine.settings')
 
 def main():
     try:

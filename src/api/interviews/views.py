@@ -51,7 +51,7 @@ def _mint_livekit_token(room_name: str, identity: str, is_publisher: bool = True
         raise ValueError(f"Failed to mint LiveKit token: {exc}")
 
 PLATFORM_INTERVIEW_PROMPT = (
-    "You are HireFlow's AI Technical Interviewer. You are conducting a direct, professional technical "
+    "You are HireEngine's AI Technical Interviewer. You are conducting a direct, professional technical "
     "interview with a candidate for an open job position.\n"
     "Rules to follow strictly:\n"
     "1. Be professional, welcoming, concise, and focused entirely on technical, practical, and role-specific competencies.\n"

@@ -1,6 +1,6 @@
-# HireFlow HR — Autonomous AI Recruitment & Interview Engine
+# HireEngine HR — Autonomous AI Recruitment & Interview Engine
 
-HireFlow is an end-to-end recruitment platform featuring automated CV parsing & anonymization, an advisory AI rubric scorer, autonomous AI voice interviews powered by OpenAI Realtime, LiveKit-based video interviews, and an intelligent slot allocation engine.
+HireEngine is an end-to-end recruitment platform featuring automated CV parsing & anonymization, an advisory AI rubric scorer, autonomous AI voice interviews powered by OpenAI Realtime, LiveKit-based video interviews, and an intelligent slot allocation engine.
 
 ---
 
@@ -73,7 +73,7 @@ python seed.py --reset
 ```
 
 **Seeded HR Credentials:**
-- **Email**: `demo@hireflow.dev`
+- **Email**: `demo@hireengine.dev`
 - **Password**: `DemoPassword123!`
 - **Public Apply Link**: `http://localhost:5173/apply/full-stack-ai-demo`
 

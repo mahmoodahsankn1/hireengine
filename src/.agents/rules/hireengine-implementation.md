@@ -1,10 +1,10 @@
 ---
 trigger: model_decision
-description: Phase-by-phase build order and how-to for HireFlow (Django REST, React + Vite, Celery, OpenAI, LiveKit). Use when starting or continuing a build phase, planning tasks, or deciding how to implement a feature.
+description: Phase-by-phase build order and how-to for HireEngine (Django REST, React + Vite, Celery, OpenAI, LiveKit). Use when starting or continuing a build phase, planning tasks, or deciding how to implement a feature.
 ---
 
-# HireFlow HR — Implementation Rules
-Build in phase order; finish and test a phase before the next. Obey `hireflow-srs` and `hireflow-schema`. Small commits. No extra libraries or features. Ask before deviating.
+# HireEngine HR — Implementation Rules
+Build in phase order; finish and test a phase before the next. Obey `hireengine-srs` and `hireengine-schema`. Small commits. No extra libraries or features. Ask before deviating.
 
 ## Layout & conventions
 - `/api` Django apps: accounts, jobs, applications, interviews, notifications, ai. `/client` Vite React (React Router, Axios, TanStack Query, Tailwind). `docker-compose.yml`: postgres, redis, api, celery worker, celery beat. `.env.example`: SECRET_KEY, OPENAI_API_KEY, LIVEKIT_URL/API_KEY/API_SECRET, SMTP_*.

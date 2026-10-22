@@ -16,13 +16,13 @@ def send_otp_email(self, user_id, otp_code):
     """
     try:
         user = User.objects.get(id=user_id)
-        subject = "Your HireFlow Verification Code"
+        subject = "Your HireEngine Verification Code"
         message = (
             f"Hello {user.full_name},\n\n"
-            f"Your HireFlow verification code is: {otp_code}\n\n"
+            f"Your HireEngine verification code is: {otp_code}\n\n"
             f"This code will expire in 10 minutes.\n"
             f"If you did not request this, please ignore this email.\n\n"
-            f"Best regards,\nThe HireFlow Team"
+            f"Best regards,\nThe HireEngine Team"
         )
         
         # Log to EmailLog
@@ -92,7 +92,7 @@ def send_application_received_email(self, application_id):
             f"We will be in touch with updates as your application progresses through our evaluation pipeline.\n\n"
             f"Best regards,\n"
             f"{company_name} Recruitment Team\n"
-            f"Powered by HireFlow"
+            f"Powered by HireEngine"
         )
 
         send_mail(
@@ -163,7 +163,7 @@ def send_round_finished_hr_email(self, job_id, round_number):
             f"You can now review candidate rankings, inspect evaluations, and send interview invitations:\n"
             f"{job_url}\n\n"
             f"Best regards,\n"
-            f"The HireFlow Team"
+            f"The HireEngine Team"
         )
 
         email_log = EmailLog.objects.create(
@@ -254,7 +254,7 @@ def send_email_task(self, email_log_id):
                 f"Best of luck!\n\n"
                 f"Warm regards,\n"
                 f"{company_name} Hiring Team\n"
-                f"Powered by HireFlow"
+                f"Powered by HireEngine"
             )
 
         elif kind == 'ai_regret':

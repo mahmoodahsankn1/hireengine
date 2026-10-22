@@ -1,9 +1,9 @@
 ---
 trigger: model_decision
-description: Product requirements and business rules for HireFlow: HR and candidate flows, the 3-round hiring pipeline, CV anonymization and scoring, AI and HR interviews, slots, emails, privacy. Use when implementing or changing any feature behavior.
+description: Product requirements and business rules for HireEngine: HR and candidate flows, the 3-round hiring pipeline, CV anonymization and scoring, AI and HR interviews, slots, emails, privacy. Use when implementing or changing any feature behavior.
 ---
 
-# HireFlow HR — Product Rules (SRS)
+# HireEngine HR — Product Rules (SRS)
 Academic mini project. Keep it simple. Follow this spec; ask before deviating.
 
 ## Stack

@@ -18,7 +18,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <Link to="/dashboard" className="navbar-brand" aria-label="HireFlow HR dashboard">
+        <Link to="/dashboard" className="navbar-brand" aria-label="HireEngine HR dashboard">
           <BrandLogo className="navbar-brand-content" />
         </Link>
 

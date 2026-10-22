@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
 
-    # HireFlow apps
+    # HireEngine apps
     'accounts',
     'jobs',
     'applications',
@@ -51,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'hireflow.urls'
+ROOT_URLCONF = 'hireengine.urls'
 
 TEMPLATES = [
     {
@@ -69,10 +69,10 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'hireflow.wsgi.application'
+WSGI_APPLICATION = 'hireengine.wsgi.application'
 
 # Database configuration (PostgreSQL 16)
-DB_NAME = os.getenv('DB_NAME', 'hireflow')
+DB_NAME = os.getenv('DB_NAME', 'hireengine')
 DB_USER = os.getenv('DB_USER', 'postgres')
 DB_PASSWORD = os.getenv('DB_PASSWORD', 'postgres')
 DB_HOST = os.getenv('DB_HOST', '127.0.0.1')
@@ -231,6 +231,6 @@ EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))
 EMAIL_USE_TLS = os.getenv('SMTP_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 EMAIL_HOST_USER = os.getenv('SMTP_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('SMTP_USER') or 'noreply@hireflow.local')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('SMTP_USER') or 'noreply@hireengine.local')
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://hireengine.vercel.app').rstrip('/')
 

@@ -3,7 +3,7 @@ import os
 import sys
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hireflow.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hireengine.settings')
     try:
         import django
         django.setup()
