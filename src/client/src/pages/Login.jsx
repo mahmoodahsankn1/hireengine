@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { BrandLogo } from '../components/common/BrandLogo'
 
 export default function Login() {
   const { login } = useAuth()
@@ -43,7 +44,7 @@ export default function Login() {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="logo-mark">🔐</div>
+          <BrandLogo className="auth-brand-logo" />
           <h1>Welcome back</h1>
           <p>Sign in to your HireFlow account</p>
         </div>

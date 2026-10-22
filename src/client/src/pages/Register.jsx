@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { BrandLogo } from '../components/common/BrandLogo'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -50,7 +51,7 @@ export default function Register() {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="logo-mark">🚀</div>
+          <BrandLogo className="auth-brand-logo" />
           <h1>Create your account</h1>
           <p>Set up HireFlow for your company</p>
         </div>

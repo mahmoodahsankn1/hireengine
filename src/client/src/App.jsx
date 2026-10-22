@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Register from './pages/Register'
 import VerifyOtp from './pages/VerifyOtp'
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import JobForm from './pages/JobForm'
 import JobDetail from './pages/JobDetail'
@@ -41,7 +42,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<GuestRoute><Landing /></GuestRoute>} />
             
             {/* Public Candidate & Policy Routes */}
             <Route path="/apply/:slug" element={<Apply />} />

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { BrandLogo } from '../components/common/BrandLogo'
 
 export default function VerifyOtp() {
   const { login } = useAuth()
@@ -99,7 +100,7 @@ export default function VerifyOtp() {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="logo-mark">✉️</div>
+          <BrandLogo className="auth-brand-logo" />
           <h1>Verify your email</h1>
           <p>
             We sent a 6-digit code to<br />
