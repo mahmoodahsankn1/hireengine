@@ -247,8 +247,9 @@ def send_email_task(self, email_log_id):
                 f"--- IMPORTANT RULES ---\n"
                 f"1. Waiting Room: You may join the waiting room up to {job.ai_join_early_minutes} minutes early "
                 f"to test your microphone and verify your connection.\n"
-                f"2. Strict Access: The interview access closes {job.ai_late_grace_minutes} minutes after the start time. "
-                f"Late arrivals will not be admitted.\n"
+                f"2. Join Window: You may enter between "
+                f"{format_interview_datetime(interview.join_opens_at, tz_name)} and "
+                f"{format_interview_datetime(interview.join_closes_at, tz_name)}.\n"
                 f"3. Environment: Please ensure you are in a quiet room with a stable internet connection and microphone.\n\n"
                 f"Best of luck!\n\n"
                 f"Warm regards,\n"
@@ -285,6 +286,8 @@ def send_email_task(self, email_log_id):
                 f"--- INTERVIEW DETAILS ---\n"
                 f"• Scheduled Time: {dt_formatted}\n"
                 f"• Duration: {job.hr_duration_minutes} minutes\n"
+                f"• Join Window: {format_interview_datetime(interview.join_opens_at, tz_name)} to "
+                f"{format_interview_datetime(interview.join_closes_at, tz_name)}\n"
                 f"• Meeting Link: {link}\n\n"
                 f"--- INSTRUCTIONS ---\n"
                 f"• You may join up to {job.hr_join_early_minutes} minutes early to test your camera and audio.\n"
@@ -380,4 +383,3 @@ def queue_application_email(application, kind, job=None):
 
     send_email_task.delay(str(email_log.id))
     return email_log
-
