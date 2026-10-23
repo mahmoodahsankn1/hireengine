@@ -1568,6 +1568,7 @@ p { color: var(--text-secondary); }
 .dashboard-page {
   position: relative;
   width: min(100%, 1320px);
+  margin-inline: auto;
   min-height: calc(100vh - 72px);
   padding: 2rem 1.5rem 4rem;
 }
