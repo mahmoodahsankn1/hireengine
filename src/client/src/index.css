@@ -1810,6 +1810,7 @@ p { color: var(--text-secondary); }
 /* ── Job detail overview ──────────────────────────────── */
 .job-detail-page {
   width: min(100%, 1240px);
+  margin-inline: auto;
   min-height: calc(100vh - 72px);
   padding: 2rem 1.5rem 4rem;
 }
