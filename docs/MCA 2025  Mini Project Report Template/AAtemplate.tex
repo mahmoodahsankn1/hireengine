@@ -1,0 +1,361 @@
+%%  **********************************************
+%
+%   The lines beginning with "%" are comments. 
+%   Theses comments explain how to use this template for
+%   preparing the MCA Fifth Semester Mini-Project Report. 
+%
+%   The first non-comment line below contains 
+%   the matter that go into the preamble of 
+%   the input file. These are collected in a 
+%   file named "preamble.tex". 
+%
+%   Do not make any changes in the first 
+%   non-comment line below.
+%
+\input{preamble}
+%
+%   No changes in the next non-comment line.
+%
+\begin{document}
+%
+%***************************************************
+%
+%   No changes in the next comment line.
+%
+\VApaper{20MCA245 Mini Project}%
+%
+%   In the next line, replace "Report Title" by 
+%   the title of your project/thesis.
+%
+\VAtitle{Report Title}%
+%
+%   In the next line, replace "Student1" 
+%   by name of first student. 
+%   Write full name without, repeat without, Mr or Ms
+%
+\VAauthora{Student Name}%
+%
+s
+%
+
+%   In the next line, replace "RegNo1" by the
+%   University Examination Register Number of first student.
+%
+\VAregisternumbera{VAS24MCA-20XX}% 
+%
+%   In the next line, replace "RegNo2" by the 
+%   University Examination Register Number of second student.
+
+%
+%   In the next line, replace "2024" by the year of  
+%   your admission to the College.
+%
+\VAadmissionyear{2024}
+%
+%   In the next line, replace "Guide" by 
+%   the full name of your guide or supervisor 
+%   with Mr. or Ms. or Dr. or Prof.
+%
+\VAguide{Ms. Siji K B}% 
+%
+%   No changes in the next three non-comment lines.
+%
+\VAhod{Dr. Reji C Joy}
+%
+\VAdept{Computer Applications}%
+%
+\VAclass{S3 MCA}%
+%
+%   The next line is code to print the first few pages: 
+%       1. Title page
+%       2. Bona Fide Certificate from MCA Dept
+%       3. Declaration
+%       4. Acknowledgment
+%   No changes in the next non-comment line.
+%
+\input{frontmatter}
+%
+%****************************************************
+%
+%   No changes in the next two non-comment lines. These
+%   lines are intended to create the Synopsis page and 
+%   to add the the item "Synopsis" to 
+%   table of contents.
+%
+\chapter*{Synopsis}
+\addcontentsline{toc}{chapter}{Synopsis}
+%
+%   Enter below a synopsis of the project report. 
+%   The two lines given
+%   are to be deleted before entering actual abstract.
+
+This is only filler material. This is an outline, a template, 
+for preparing mini project reports. The instructions given 
+herein are to be followed verbatim.
+%
+%***************************************************
+%
+%   The next three lines creates a Table of Contents 
+%   in a new page. 
+%   Do not delete this. There must be a Table of Contents.
+%
+\clearpage
+\addcontentsline{toc}{chapter}{Table of Contents}
+\tableofcontents
+%
+%   The next three lines create a page containing a 
+%   List of Tables. Delete them if there are no 
+%   tables in your project report. 
+%
+\clearpage
+\addcontentsline{toc}{chapter}{List of Tables}
+\listoftables
+%
+%   The next three line create a page containing a 
+%   List of Figures. Delete them if there are no 
+%   figures in your project report.
+%
+\clearpage
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+%
+%***************************************************
+%
+\mainmatter
+%
+\clearpage
+\quad\vfill
+\begin{center}
+{\Huge \bf PROJECT REPORT}
+\end{center}
+\vfill
+\clearpage
+%
+%
+%   The main contents of the paper begin here. 
+% 
+%
+%   *********************  CHAPTER ***********************
+%
+%  
+\chapter{INTRODUCTION}
+
+%
+\section{Problem Definition}
+%
+\section{Objectives}
+%
+\section{Purpose of the Project}
+
+%
+%   *********************  CHAPTER ***********************
+%
+%
+\chapter{SYSTEM ANALYSIS}
+%
+\section{The Existing System}	
+
+%< Describe your various components here >
+\section{Proposed System}
+%
+%
+%   *********************  CHAPTER ***********************
+%
+%
+\chapter{FEASIBILITY STUDY}
+%
+\section{Technical Feasibility}
+%
+\section{Economical Feasibility}
+%
+\section{Operational Feasibility}
+%
+\chapter{SYSTEM DESIGN}
+%
+\section{Input Design}
+%
+\section{Output Design}
+%
+\section{Database Design}
+%
+%
+%   *********************  CHAPTER ***********************
+%
+%
+\chapter{IMPLEMENTATION, TESTING AND VALIDATION}
+%
+\section{Implementation}
+%
+\section{Testing Methods}
+% < Describe the various Testing methods used here >
+\section{Validation}
+%	< Validation done in the project >
+%
+%   *********************  CHAPTER ***********************
+%
+\chapter{CONCLUSION}
+%
+%   *********************  CHAPTER ***********************
+%
+\chapter{SCOPE FOR FUTURE ENHANCEMENT}
+%
+%
+%   *********************  CHAPTER ***********************
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%  APPENDICES %%%%%%%%%%%%%%%%%%%%%
+%
+\clearpage
+\addcontentsline{toc}{chapter}{APPENDICES}
+\appendix
+\quad\vfill
+\begin{center}
+{\Huge \bf APPENDICES}
+\end{center}
+\vfill
+\clearpage
+%
+%
+%   *********************  CHAPTER ***********************
+%
+%
+\chapter{SCRUM PROCESS ARTIFACTS}
+%
+\section{Product Backlog}
+%
+% The following table is only a sample. 
+%
+\renewcommand{\arraystretch}{1.25}
+\begin{center}
+\begin{tabular}{|m{0.08\textwidth}|m{0.15\textwidth}|m{0.5\textwidth}|m{0.1\textwidth}|}
+\hline
+{\bf Priority} & {\bf Product backlog items} & {\bf User story} & {\bf Estimate (Hours)}\\
+\hline
+1 & Database creation & As an operations engineer, I want to be able to store all customer information.  & 240 \\
+\hline
+2 & Login page & As a site member I want to login to the site. & 160 \\
+\hline
+3 & Category page & As a site member, I want to be able to look for different categories of brands. & 400\\
+\hline
+4 & Payment process & As a site member, I want to be able to make payments. & 240\\
+\hline
+5 & Contact page & As a site member, I want to be able to find contact information of the site. & 80 \\
+\hline
+6 & Banner area & As a marketing personnel, I want to be able to make advertisement. & 40\\
+\hline
+\end{tabular}
+\end{center}
+%
+\section{Scrum Meeting Details}
+%
+\begin{center}
+\begin{tabular}{|m{0.03\textwidth}|m{0.05\textwidth}|m{0.3\textwidth}|m{0.2\textwidth}|m{0.2\textwidth}|}
+\hline
+Sl. No. & Date & Sprint backlog & Product shippable Increment & Important Decisions \\
+\hline
+& & & &  \\
+\hline
+\end{tabular}
+\end{center}
+
+\renewcommand{\arraystretch}{1}
+%
+%   *********************  APPENDIX ***********************
+%
+\chapter{UML DIAGRAMS}
+\section{Class Diagram}
+%
+\begin{figure}
+   \centering
+    \includegraphics[width=0.5\linewidth]{chatgptaopenai.jpg}
+    \caption{Enter Caption}
+    \label{fig:enter-label}
+\end{figure}
+\begin{figure}
+   \centering
+    \includegraphics[width=0.5\linewidth]{chatgptaopenai.jpg}
+    \caption{Chatgpt}
+    \label{fig:enter-label}
+\end{figure}
+\section{State Diagram}
+%
+%
+%   *********************  APPENDIX ***********************
+%
+\chapter{TABLE STRUCTURE}
+\begin{table}
+ \centering
+  \begin{tabular}{|l|l|l|l|l|}
+    \hline 
+   Sl. No.&  Field&  Datatype&  Constraint& Description \\
+     \hline  
+    1 & Stud\_No & Number &Primary Key  & Student Register Number\\ 
+      \hline 
+     2 & Stud\_Name  & Text & Not Null & Student Name\\
+     \hline 
+     3  & Phone\_Number & Numeric & Not Null & Phone number \\ 
+				\hline
+    \end{tabular}
+    \caption{Student table}
+\label{table:Student}
+\end{table}
+\begin{table}
+ \centering
+  \begin{tabular}{|l|l|l|l|l|}
+    \hline 
+   Sl. No.&  Field&  Datatype&  Constraint& Description \\
+     \hline  
+    1 & Stud\_No & Number &Primary Key  & Student Register Number\\ 
+      \hline 
+     2 & Stud\_Name  & Text & Not Null & Student Name\\
+     \hline 
+     3  & Phone\_Number & Numeric & Not Null & Phone number \\ 
+				\hline
+    \end{tabular}
+    \caption{Master table}
+\label{table:Student}
+\end{table}
+
+%   *********************  APPENDIX ***********************
+%
+\chapter{SAMPLE SCREENSHOTS}
+%
+%
+% ***   Creating Bibliography   ***
+%
+% Do not delete the following two lines
+%
+\clearpage
+\addcontentsline{toc}{chapter}{Bibliography}
+%
+%   The markups for creating the bibliography 
+%   begins here. Do not change the two lines 
+%   "\begin{thebibliography}{99}" and 
+%   "\end{thebibliography}".
+%   One sample bibliography item is included. 
+%   Each new item is to be preceded by
+%   "\bibitem{itemx}".
+%   Add additional items if there are any.
+%   Bibliography styles:
+%   Titles of books   : Italics  {use {\em Title} )
+%   URLs of websites  : Type-writer (use {\tt Title} )
+%   Titles of papers  : In double quotes (use ``Title")
+%
+\begin{thebibliography}{99}
+%
+\bibitem{item1}
+{\em First Lessons in \LaTeX}, by Dr. V N Krishnachandran, 
+Vidya Academy of Science \& Technology, 
+Thrissur - 680 501, 2011.
+%
+\end{thebibliography}
+%
+%
+%   Printing the last page
+%
+\input{lastpage}
+%
+%
+%   ***   The end   ***
+%
+%
+\end{document}

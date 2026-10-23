@@ -1,0 +1,37 @@
+%
+%   Redefining plain page style
+%  
+\fancypagestyle{plain}{%
+\fancyhf{} % clear all header and footer fields
+\fancyhead[L]{{\small \vtitle}}
+\fancyhead[R]{\bf \thepage}
+\fancyfoot[C]{\bfseries \thepage} 
+\fancyfoot[L]%
+{{\scriptsize Department of \vdept, 
+Vidya Academy of Science \& Technology, Thrissur}}
+\fancyfoot[R]%
+{\includegraphics[width=0.75cm]{VidyaLogo}}%
+\fancyfoot[C]{ }%
+\renewcommand{\headrulewidth}{1pt}%
+\renewcommand{\footrulewidth}{0.5pt}%
+}%
+%
+\pagestyle{empty}
+%
+\input{titlepage}
+%
+\clearpage
+%
+\addcontentsline{toc}{chapter}{Certificate from College}
+\input{certificate}
+\clearpage
+%
+\addcontentsline{toc}{chapter}{Declaration by Student}
+\input{declaration}
+\clearpage
+%
+\addcontentsline{toc}{chapter}{Acknowledgment}
+\input{acknowledgment}
+%
+\clearpage
+%

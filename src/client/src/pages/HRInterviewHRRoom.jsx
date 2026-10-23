@@ -20,8 +20,8 @@ import {
 import '@livekit/components-styles'
 import api from '../services/api'
 import {
-  Video, Award, Star, FileText, ChevronRight,
-  CheckCircle, XCircle, AlertTriangle, X, User,
+  Video, FileText, ChevronRight, CheckCircle, XCircle, AlertTriangle, X, User,
+  Clock, ShieldCheck,
 } from 'lucide-react'
 
 function ScorePill({ label, value, max, color }) {
@@ -43,6 +43,9 @@ export default function HRInterviewHRRoom() {
   const { interviewId } = useParams()
   const navigate = useNavigate()
 
+  const [interviewInfo, setInterviewInfo] = useState(null)
+  const [loadingInfo, setLoadingInfo] = useState(true)
+  const [infoError, setInfoError] = useState(null)
   const [roomData, setRoomData] = useState(null)
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState(null)
@@ -56,30 +59,57 @@ export default function HRInterviewHRRoom() {
   const [feedbackError, setFeedbackError] = useState(null)
 
   const [showFeedbackPanel, setShowFeedbackPanel] = useState(false)
-  const [inRoom, setInRoom] = useState(false)
+  const [currentTime, setCurrentTime] = useState(() => new Date())
 
   useEffect(() => {
-    join()
+    let cancelled = false
+    api.get(`/interviews/${interviewId}/`)
+      .then(res => {
+        if (!cancelled) {
+          setInterviewInfo(res.data)
+          if (res.data.feedback) {
+            setFeedbackDone(true)
+            setDecision(res.data.feedback.decision)
+            setRating(String(res.data.feedback.rating || ''))
+            setNotes(res.data.feedback.notes || '')
+          }
+        }
+      })
+      .catch(err => {
+        if (!cancelled) setInfoError(err.response?.data?.error || 'Could not load interview details.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingInfo(false)
+      })
+    return () => { cancelled = true }
   }, [interviewId])
 
-  async function join() {
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const join = useCallback(async () => {
     setJoining(true)
     setJoinError(null)
     try {
       const res = await api.post(`/interviews/${interviewId}/join/`)
       setRoomData(res.data)
-      setInRoom(true)
     } catch (err) {
       setJoinError(err.response?.data?.error || 'Failed to join interview room.')
     } finally {
       setJoining(false)
     }
-  }
+  }, [interviewId])
 
   async function handleSubmitFeedback(e) {
     e.preventDefault()
     if (!decision) {
       setFeedbackError('Please select a decision before submitting.')
+      return
+    }
+    if (!rating) {
+      setFeedbackError('Please select an interview rating from 1 to 10.')
       return
     }
     setSubmitting(true)
@@ -99,36 +129,71 @@ export default function HRInterviewHRRoom() {
     }
   }
 
-  if (joining) {
+  if (loadingInfo) {
+    return <div className="hr-meeting-entry"><div className="hr-meeting-entry-card"><span className="spinner" /><p>Loading interview details…</p></div></div>
+  }
+
+  if (infoError) {
     return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', background: '#0f1117',
-      }}>
-        <div style={{ textAlign: 'center', color: '#fff' }}>
-          <div className="spinner" style={{ width: '2.5rem', height: '2.5rem', margin: '0 auto 1rem', borderColor: 'rgba(99,102,241,0.3)', borderTopColor: '#6366f1' }} />
-          <p>Joining interview room…</p>
+      <div className="hr-meeting-entry">
+        <div className="hr-meeting-entry-card">
+          <AlertTriangle size={38} className="hr-meeting-entry-error-icon" />
+          <h1>Interview unavailable</h1>
+          <p>{infoError}</p>
+          <button className="btn btn-secondary" onClick={() => navigate(-1)}>Back to job</button>
         </div>
       </div>
     )
   }
 
-  if (joinError) {
+  if (!roomData && interviewInfo?.feedback) {
     return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', background: '#0f1117', padding: '2rem',
-      }}>
-        <div style={{
-          maxWidth: '480px', width: '100%', background: 'var(--bg-card)',
-          borderRadius: 'var(--radius-lg)', padding: '2rem', textAlign: 'center', color: '#fff',
-        }}>
-          <AlertTriangle size={40} color="#ef4444" style={{ margin: '0 auto 1rem' }} />
-          <h2 style={{ marginBottom: '0.5rem' }}>Cannot Join Room</h2>
-          <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>{joinError}</p>
-          <button className="btn btn-secondary" onClick={() => navigate(-1)}>← Go Back</button>
+      <div className="hr-meeting-entry">
+        <div className="hr-meeting-entry-card">
+          <CheckCircle size={42} className="hr-meeting-entry-success-icon" />
+          <span className="hr-meeting-entry-kicker">INTERVIEW COMPLETE</span>
+          <h1>Feedback already submitted</h1>
+          <p>{interviewInfo.candidate_name} · {interviewInfo.job_title}</p>
+          <div className="hr-meeting-feedback-receipt">
+            <strong>{interviewInfo.feedback.rating}/10</strong>
+            <span>{interviewInfo.feedback.decision === 'selected' ? 'Recommended to advance' : 'Not recommended to advance'}</span>
+            {interviewInfo.feedback.notes && <p>{interviewInfo.feedback.notes}</p>}
+          </div>
+          <button className="btn btn-secondary" onClick={() => navigate(-1)}>Back to job</button>
         </div>
       </div>
+    )
+  }
+
+  if (!roomData) {
+    const joinOpensAt = interviewInfo?.join_opens_at ? new Date(interviewInfo.join_opens_at) : null
+    const isEarly = joinOpensAt && currentTime < joinOpensAt
+    return (
+      <main className="hr-meeting-entry">
+        <section className="hr-meeting-entry-card">
+          <div className="hr-meeting-entry-icon"><Video size={26} /></div>
+          <span className="hr-meeting-entry-kicker">HIREENGINE · RECRUITER ROOM</span>
+          <h1>Prepare for your interview</h1>
+          <p className="hr-meeting-entry-candidate">{interviewInfo?.candidate_name}</p>
+          <p>{interviewInfo?.job_title} · {interviewInfo?.company_name}</p>
+          <div className="hr-meeting-entry-details">
+            <div><span>Scheduled</span><strong>{new Date(interviewInfo.start_at).toLocaleString()}</strong></div>
+            <div><span>Duration</span><strong>{interviewInfo.duration_minutes} minutes</strong></div>
+            <div><span>Room opens</span><strong>{joinOpensAt?.toLocaleString() || 'Now'}</strong></div>
+            <div><span>Status</span><strong>{interviewInfo.status.replaceAll('_', ' ')}</strong></div>
+          </div>
+          {joinError && <div className="alert alert-error hr-meeting-join-error" role="alert"><AlertTriangle size={16} />{joinError}</div>}
+          {isEarly ? (
+            <div className="hr-meeting-early-note"><Clock size={18} /><span>The room is not open yet. You can join when the scheduled early-access time begins.</span></div>
+          ) : (
+            <button className="btn btn-primary hr-meeting-join-button" onClick={join} disabled={joining}>
+              {joining ? <><span className="spinner" /> Connecting…</> : <><Video size={17} /> Join live interview</>}
+            </button>
+          )}
+          <div className="hr-meeting-entry-note"><ShieldCheck size={17} /><span>Your interview notes and rating are saved to this candidate’s evaluation.</span></div>
+          <button className="btn btn-ghost hr-meeting-entry-back" onClick={() => navigate(-1)}>Back to job</button>
+        </section>
+      </main>
     )
   }
 
@@ -137,9 +202,27 @@ export default function HRInterviewHRRoom() {
   const ctx = roomData  // { token, server_url, candidate_name, cv_score, ai_score, resume_url, ... }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', background: '#0f1117', overflow: 'hidden' }}>
+    <main className="hr-meeting-shell">
+      <header className="hr-meeting-toolbar">
+        <div>
+          <span>LIVE INTERVIEW · ROUND 3</span>
+          <strong>{ctx.candidate_name}</strong>
+          <small>{interviewInfo?.job_title || 'Candidate interview'}</small>
+        </div>
+        <button
+          id="toggle-side-panel-btn"
+          className="hr-meeting-panel-toggle"
+          onClick={() => setShowFeedbackPanel(v => !v)}
+          aria-expanded={showFeedbackPanel}
+          aria-controls="hr-meeting-feedback-panel"
+        >
+          {showFeedbackPanel ? <X size={17} /> : <User size={17} />}
+          {showFeedbackPanel ? 'Hide evaluation' : 'Evaluation & rating'}
+        </button>
+      </header>
+      <div className="hr-meeting-layout">
       {/* ── LiveKit Room (left / main) ── */}
-      <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+      <section className="hr-meeting-video">
         <LiveKitRoom
           serverUrl={ctx.server_url}
           token={ctx.token}
@@ -151,75 +234,47 @@ export default function HRInterviewHRRoom() {
             console.error('LiveKit connection error:', err)
             setJoinError(`Connection error: ${err?.message || 'Could not connect to the meeting room. Please check your network and try again.'}`)
             setRoomData(null)
-            setInRoom(false)
           }}
-          onDisconnected={() => setInRoom(false)}
+          onDisconnected={() => setRoomData(null)}
         >
           <VideoConference />
           <RoomAudioRenderer />
         </LiveKitRoom>
-
-        {/* Floating toggle for side panel (mobile) */}
-        <button
-          id="toggle-side-panel-btn"
-          onClick={() => setShowFeedbackPanel(v => !v)}
-          style={{
-            position: 'absolute', top: '1rem', right: '1rem',
-            background: 'rgba(99,102,241,0.9)', border: 'none', borderRadius: '50%',
-            width: '44px', height: '44px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 100, color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
-          }}
-          title="Toggle candidate panel"
-        >
-          {showFeedbackPanel ? <X size={18} /> : <User size={18} />}
-        </button>
-      </div>
+      </section>
 
       {/* Mobile backdrop overlay */}
       {showFeedbackPanel && (
         <div
-          className="mobile-drawer-overlay"
+          className="hr-meeting-drawer-overlay"
           onClick={() => setShowFeedbackPanel(false)}
         />
       )}
 
       {/* ── HR Side Panel (right) ── */}
-      <div
-        className="hr-side-panel"
-        style={{
-          width: showFeedbackPanel ? 'min(100vw, 380px)' : '0',
-          transition: 'width 0.25s ease',
-          overflow: 'hidden',
-          background: 'var(--bg-card)',
-          borderLeft: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div style={{ width: 'min(100vw, 380px)', height: '100%', overflowY: 'auto', padding: '1.5rem' }}>
+      <aside id="hr-meeting-feedback-panel" className={`hr-side-panel ${showFeedbackPanel ? 'is-open' : ''}`}>
+        <div className="hr-side-panel-inner">
           {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <div className="hr-side-panel-heading">
             <div>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: '0.15rem' }}>
+              <span className="hr-panel-eyebrow">CANDIDATE EVALUATION</span>
+              <h3>
                 {ctx.candidate_name}
               </h3>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{ctx.candidate_email}</p>
+              <p>{ctx.candidate_email}</p>
             </div>
             <button
               onClick={() => setShowFeedbackPanel(false)}
-              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              className="hr-panel-close"
+              aria-label="Close evaluation panel"
             >
               <X size={18} />
             </button>
           </div>
 
           {/* Scores */}
-          <div style={{ marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.6rem' }}>
-              Evaluation Scores
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+          <div className="hr-panel-score-section">
+            <p>Existing screening scores</p>
+            <div>
               <ScorePill label="CV Score" value={ctx.cv_score} max={100} color="#06b6d4" />
               <ScorePill label="AI Interview" value={ctx.ai_score} max={100} color="#6366f1" />
             </div>
@@ -232,26 +287,17 @@ export default function HRInterviewHRRoom() {
               href={ctx.resume_url}
               target="_blank"
               rel="noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
-                borderRadius: 'var(--radius-md)', padding: '0.65rem 0.9rem',
-                color: '#a5b4fc', textDecoration: 'none', fontSize: '0.85rem',
-                marginBottom: '1.25rem', fontWeight: 500,
-              }}
+              className="hr-panel-resume-link"
             >
               <FileText size={16} /> View Resume <ChevronRight size={14} style={{ marginLeft: 'auto' }} />
             </a>
           )}
 
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 0 1.25rem' }} />
+          <div className="hr-panel-divider" />
 
           {/* Feedback Form */}
           {feedbackDone ? (
-            <div style={{
-              background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)',
-              borderRadius: 'var(--radius-md)', padding: '1.25rem', textAlign: 'center',
-            }}>
+            <div className="hr-feedback-success">
               <CheckCircle size={32} color="#22c55e" style={{ margin: '0 auto 0.5rem' }} />
               <p style={{ color: '#86efac', fontWeight: 600 }}>Feedback Submitted</p>
               <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginTop: '0.25rem' }}>
@@ -267,29 +313,20 @@ export default function HRInterviewHRRoom() {
             </div>
           ) : (
             <form onSubmit={handleSubmitFeedback}>
-              <p style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.9rem' }}>
-                Interview Feedback
-              </p>
+              <div className="hr-feedback-title"><span>YOUR EVALUATION</span><h4>Interview feedback</h4><p>Rate the interview and record your hiring recommendation.</p></div>
 
               {/* Decision */}
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.82rem', color: '#cbd5e1', display: 'block', marginBottom: '0.4rem' }}>
+                <label className="hr-feedback-label">
                   Decision <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div className="hr-decision-grid">
                   <button
                     type="button"
                     id="decision-selected"
                     onClick={() => setDecision('selected')}
-                    style={{
-                      padding: '0.65rem', borderRadius: 'var(--radius-md)', border: '2px solid',
-                      borderColor: decision === 'selected' ? '#22c55e' : 'rgba(255,255,255,0.1)',
-                      background: decision === 'selected' ? 'rgba(34,197,94,0.15)' : 'transparent',
-                      color: decision === 'selected' ? '#86efac' : '#94a3b8',
-                      cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                      transition: 'all 0.15s',
-                    }}
+                    className={`hr-decision-button ${decision === 'selected' ? 'is-selected' : ''}`}
+                    aria-pressed={decision === 'selected'}
                   >
                     <CheckCircle size={15} /> Select
                   </button>
@@ -297,15 +334,8 @@ export default function HRInterviewHRRoom() {
                     type="button"
                     id="decision-rejected"
                     onClick={() => setDecision('rejected')}
-                    style={{
-                      padding: '0.65rem', borderRadius: 'var(--radius-md)', border: '2px solid',
-                      borderColor: decision === 'rejected' ? '#ef4444' : 'rgba(255,255,255,0.1)',
-                      background: decision === 'rejected' ? 'rgba(239,68,68,0.15)' : 'transparent',
-                      color: decision === 'rejected' ? '#fca5a5' : '#94a3b8',
-                      cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                      transition: 'all 0.15s',
-                    }}
+                    className={`hr-decision-button reject ${decision === 'rejected' ? 'is-selected' : ''}`}
+                    aria-pressed={decision === 'rejected'}
                   >
                     <XCircle size={15} /> Reject
                   </button>
@@ -314,25 +344,20 @@ export default function HRInterviewHRRoom() {
 
               {/* Rating */}
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.82rem', color: '#cbd5e1', display: 'block', marginBottom: '0.4rem' }}>
-                  Rating (1–10) <span style={{ color: '#64748b', fontWeight: 400 }}>optional</span>
+                <label className="hr-feedback-label">
+                  Interview rating <span>Required · 1–10</span>
                 </label>
-                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                <div className="hr-rating-grid" role="radiogroup" aria-label="Interview rating, from 1 to 10">
                   {[1,2,3,4,5,6,7,8,9,10].map(n => (
                     <button
                       key={n}
                       type="button"
                       id={`rating-${n}`}
-                      onClick={() => setRating(rating === String(n) ? '' : String(n))}
-                      style={{
-                        width: '30px', height: '30px',
-                        borderRadius: 'var(--radius-sm)', border: '1px solid',
-                        borderColor: rating === String(n) ? '#6366f1' : 'rgba(255,255,255,0.12)',
-                        background: rating === String(n) ? '#6366f1' : 'transparent',
-                        color: rating === String(n) ? '#fff' : '#94a3b8',
-                        cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem',
-                        transition: 'all 0.12s',
-                      }}
+                      onClick={() => setRating(String(n))}
+                      className={`hr-rating-option ${rating === String(n) ? 'is-selected' : ''}`}
+                      role="radio"
+                      aria-checked={rating === String(n)}
+                      aria-label={`Rate ${n} out of 10`}
                     >
                       {n}
                     </button>
@@ -342,8 +367,8 @@ export default function HRInterviewHRRoom() {
 
               {/* Notes */}
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ fontSize: '0.82rem', color: '#cbd5e1', display: 'block', marginBottom: '0.4rem' }}>
-                  Notes <span style={{ color: '#64748b', fontWeight: 400 }}>optional</span>
+                <label htmlFor="feedback-notes" className="hr-feedback-label">
+                  Interview notes <span>Optional</span>
                 </label>
                 <textarea
                   id="feedback-notes"
@@ -351,12 +376,7 @@ export default function HRInterviewHRRoom() {
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Key observations, strengths, areas of concern…"
                   rows={4}
-                  style={{
-                    width: '100%', background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)',
-                    color: '#e2e8f0', padding: '0.65rem 0.85rem', fontSize: '0.85rem',
-                    resize: 'vertical', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-                  }}
+                  className="hr-feedback-notes"
                 />
               </div>
 
@@ -370,9 +390,8 @@ export default function HRInterviewHRRoom() {
               <button
                 id="submit-feedback-btn"
                 type="submit"
-                className="btn btn-primary"
-                disabled={submitting || !decision}
-                style={{ width: '100%', background: 'linear-gradient(135deg, #6366f1, #06b6d4)' }}
+                disabled={submitting || !decision || !rating}
+                className="btn btn-primary hr-feedback-submit"
               >
                 {submitting ? (
                   <>
@@ -380,13 +399,14 @@ export default function HRInterviewHRRoom() {
                     Submitting…
                   </>
                 ) : (
-                  'Submit Feedback'
+                  <>Save interview rating <CheckCircle size={16} /></>
                 )}
               </button>
             </form>
           )}
         </div>
+      </aside>
       </div>
-    </div>
+    </main>
   )
 }

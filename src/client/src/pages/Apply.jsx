@@ -3,10 +3,11 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import { 
-  Briefcase, MapPin, Clock, Calendar, UploadCloud, 
-  CheckCircle, AlertCircle, FileText, Check, ShieldCheck 
+  Briefcase, MapPin, Calendar, UploadCloud,
+  CheckCircle, AlertCircle, FileText, Check, ShieldCheck, ArrowRight, Building2
 } from 'lucide-react'
 import { Button } from '../components/common/Button'
+import { BrandLogo } from '../components/common/BrandLogo'
 
 const rawApiUrl = import.meta.env.VITE_API_URL
 const API_BASE = (() => {
@@ -187,59 +188,66 @@ export default function Apply() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '2rem 1rem' }}>
-      <div className="container" style={{ maxWidth: '780px', margin: '0 auto' }}>
+    <div className="apply-page">
+      <header className="apply-header">
+        <Link to="/" className="apply-brand" aria-label="HireEngine home"><BrandLogo /></Link>
+        <Link to="/privacy" className="apply-privacy-link">Privacy &amp; data protection <ArrowRight size={14} aria-hidden="true" /></Link>
+      </header>
+      <main className="apply-shell">
         
         {/* Company and Job Header */}
-        <div className="card" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary-light)' }}>
+        <div className="card apply-job-card">
+          <div className="apply-company-row">
+            <span className="apply-company">
+              <Building2 size={15} aria-hidden="true" />
               {job.company_name || 'Hiring Organization'}
             </span>
             {job.closed && (
-              <span className="badge badge-danger" style={{ marginLeft: 'auto' }}>
+              <span className="badge badge-danger apply-closed-badge">
                 Applications Closed
               </span>
             )}
           </div>
 
-          <h1 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.25rem)', fontWeight: 800, marginBottom: '0.75rem' }}>
+          <h1 className="apply-job-title">
             {job.title}
           </h1>
 
           {/* Job Badges */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              <MapPin size={15} color="var(--color-accent)" /> {job.location}
+          <div className="apply-job-meta">
+            <span>
+              <MapPin size={15} /> {job.location || 'Location not specified'}
             </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              <Briefcase size={15} color="var(--color-primary-light)" /> {job.employment_type?.replace('_', ' ')} · {job.work_mode}
+            <span>
+              <Briefcase size={15} /> {job.employment_type?.replaceAll('_', ' ') || 'Employment type not specified'}
             </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              <Calendar size={15} color="var(--color-warning)" /> Deadline: {formatDate(job.application_deadline)}
+            <span>
+              <Building2 size={15} /> {job.work_mode || 'Work mode not specified'}
+            </span>
+            <span>
+              <Calendar size={15} /> Apply by {formatDate(job.application_deadline)}
             </span>
           </div>
 
           {/* Job Description */}
-          <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>About the Role</h3>
-            <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.925rem', lineHeight: '1.65', color: 'var(--text-secondary)' }}>
+          <div className="apply-role-description">
+            <h2>About the Role</h2>
+            <p>
               {job.description}
             </p>
           </div>
 
           {/* Required Skills */}
           {job.required_skills && job.required_skills.length > 0 && (
-            <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: '1.25rem', marginTop: '1.25rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.625rem' }}>Target Skills</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div className="apply-target-skills">
+              <h2>Target Skills</h2>
+              <div className="apply-skill-list">
                 {job.required_skills.map((item, idx) => (
                   <span 
                     key={idx} 
-                    className={`badge ${item.level === 'must' ? 'badge-primary' : 'badge-muted'}`}
-                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    className={`apply-skill ${item.level === 'must' ? 'apply-skill-required' : ''}`}
                   >
-                    {item.skill} {item.level === 'must' ? '· Must have' : '· Nice to have'}
+                    {item.skill} <span>· {item.level === 'must' ? 'Must have' : 'Nice to have'}</span>
                   </span>
                 ))}
               </div>
@@ -249,34 +257,38 @@ export default function Apply() {
 
         {/* Closed Banner */}
         {job.closed ? (
-          <div className="card" style={{ padding: '2rem', textAlign: 'center', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.05)' }}>
-            <AlertCircle size={36} style={{ color: 'var(--color-danger)', margin: '0 auto 0.75rem' }} />
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--color-danger)' }}>
+          <div className="card apply-closed-card">
+            <AlertCircle size={36} aria-hidden="true" />
+            <h2>
               Applications Are Closed
             </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', maxWidth: '480px', margin: '0 auto' }}>
+            <p>
               {job.closed_reason || 'The application window for this position has closed. No further submissions are being accepted.'}
             </p>
           </div>
         ) : (
           /* Application Form Card */
-          <div className="card" style={{ padding: '2rem' }}>
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.5rem' }}>Submit Your Application</h2>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-              Upload your resume for automated anonymization and evaluation. Ensure your document is a text-based PDF or DOCX file.
-            </p>
+          <section className="card apply-form-card">
+            <div className="apply-form-heading">
+              <span className="apply-form-heading-icon"><FileText size={19} aria-hidden="true" /></span>
+              <div>
+                <span className="apply-form-eyebrow">Your next opportunity</span>
+                <h2>Submit Your Application</h2>
+                <p>Share your details and resume to be considered for this role.</p>
+              </div>
+            </div>
 
             {errorMsg && (
-              <div className="alert alert-error" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className="alert alert-error apply-error" role="alert">
                 <AlertCircle size={18} />
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <form onSubmit={handleSubmit} className="apply-form">
               
-              <div>
-                <label className="form-label" htmlFor="fullName">Full Name *</label>
+              <div className="apply-form-field">
+                <label className="form-label" htmlFor="fullName">Full Name <span>*</span></label>
                 <input 
                   id="fullName" 
                   type="text" 
@@ -284,13 +296,14 @@ export default function Apply() {
                   placeholder="e.g. John Doe"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  autoComplete="name"
                   required 
                 />
               </div>
 
               <div className="apply-contact-grid">
-                <div>
-                  <label className="form-label" htmlFor="email">Email Address *</label>
+                <div className="apply-form-field">
+                  <label className="form-label" htmlFor="email">Email Address <span>*</span></label>
                   <input 
                     id="email" 
                     type="email" 
@@ -298,11 +311,12 @@ export default function Apply() {
                     placeholder="john@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
                     required 
                   />
                 </div>
-                <div>
-                  <label className="form-label" htmlFor="phone">Phone Number *</label>
+                <div className="apply-form-field">
+                  <label className="form-label" htmlFor="phone">Phone Number <span>*</span></label>
                   <input 
                     id="phone" 
                     type="tel" 
@@ -310,74 +324,66 @@ export default function Apply() {
                     placeholder="e.g. +91 9876543210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    autoComplete="tel"
                     required 
                   />
                 </div>
               </div>
 
               {/* Resume File Upload Dropzone */}
-              <div>
-                <label className="form-label">Resume Document (PDF or DOCX, max 5MB) *</label>
-                <div 
+              <div className="apply-form-field">
+                <label className="form-label" htmlFor="resumeFileInput">Resume Document <span>*</span></label>
+                <p className="apply-upload-hint">PDF or DOCX · Maximum file size 5MB</p>
+                <label
+                  className={`apply-dropzone ${dragActive ? 'is-drag-active' : ''} ${resumeFile ? 'has-file' : ''}`}
+                  htmlFor="resumeFileInput"
                   onDragEnter={(e) => { e.preventDefault(); setDragActive(true) }}
                   onDragLeave={(e) => { e.preventDefault(); setDragActive(false) }}
                   onDragOver={(e) => { e.preventDefault() }}
                   onDrop={handleDrop}
-                  style={{
-                    border: `2px dashed ${dragActive ? 'var(--color-primary)' : 'var(--border-subtle)'}`,
-                    borderRadius: 'var(--radius-md)',
-                    padding: '2rem 1.5rem',
-                    textAlign: 'center',
-                    background: dragActive ? 'rgba(99,102,241,0.08)' : 'var(--bg-input)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onClick={() => document.getElementById('resumeFileInput')?.click()}
                 >
                   <input 
                     id="resumeFileInput"
                     type="file" 
                     accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    style={{ display: 'none' }}
+                    className="apply-file-input"
+                    aria-label={resumeFile ? `Selected resume ${resumeFile.name}. Choose a different file.` : 'Choose a PDF or DOCX resume'}
                     onChange={(e) => handleFileSelect(e.target.files?.[0])}
                   />
 
                   {resumeFile ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-                      <FileText size={28} color="var(--color-accent)" />
-                      <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{resumeFile.name}</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                    <div className="apply-selected-file">
+                      <span className="apply-upload-icon"><FileText size={21} aria-hidden="true" /></span>
+                      <div className="apply-selected-file-copy">
+                        <strong>{resumeFile.name}</strong>
+                        <small>
                           {(resumeFile.size / 1024).toFixed(1)} KB · Click to change file
-                        </div>
+                        </small>
                       </div>
-                      <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>Ready</span>
+                      <span className="apply-file-ready"><Check size={14} aria-hidden="true" /> Ready</span>
                     </div>
                   ) : (
-                    <div>
-                      <UploadCloud size={36} color="var(--color-primary-light)" style={{ margin: '0 auto 0.75rem' }} />
-                      <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem' }}>
+                    <div className="apply-upload-empty">
+                      <span className="apply-upload-icon"><UploadCloud size={23} aria-hidden="true" /></span>
+                      <strong>
                         Click to browse or drag and drop your resume
-                      </div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                        Supports text-based PDF or DOCX format (Max 5MB)
-                      </div>
+                      </strong>
+                      <small>Text-based PDF or DOCX · Maximum 5MB</small>
                     </div>
                   )}
-                </div>
+                </label>
               </div>
 
               {/* Mandatory Consent Checkbox */}
-              <div className="apply-compliance-notice" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <div className="apply-compliance-notice">
                 <input 
                   id="consentCheckbox"
                   type="checkbox"
                   checked={consentGiven}
                   onChange={(e) => setConsentGiven(e.target.checked)}
-                  style={{ width: '1.25rem', height: '1.25rem', marginTop: '0.15rem', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
                   required
                 />
-                <label htmlFor="consentCheckbox" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.5', cursor: 'pointer' }}>
+                <label htmlFor="consentCheckbox">
                   I consent to the collection and automated processing of my resume in accordance with the{' '}
                   <Link to="/privacy" target="_blank" style={{ color: 'var(--text-link)', textDecoration: 'underline' }}>
                     HireEngine Privacy Policy
@@ -398,15 +404,21 @@ export default function Apply() {
                     Submitting Application...
                   </>
                 ) : (
-                  'Submit Application →'
+                  <>Submit Application <ArrowRight size={17} aria-hidden="true" /></>
                 )}
               </Button>
 
+              <p className="apply-form-footnote"><ShieldCheck size={14} aria-hidden="true" /> Your information is handled securely and used only for this application.</p>
             </form>
-          </div>
+          </section>
         )}
 
-      </div>
+        <footer className="apply-footer">
+          <BrandLogo />
+          <span>Powered by HireEngine</span>
+          <Link to="/privacy">Privacy Policy</Link>
+        </footer>
+      </main>
     </div>
   )
 }

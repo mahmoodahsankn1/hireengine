@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1780" viewBox="0 0 1200 1780">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#111"/>
+    </marker>
+    <style>
+      text { font-family: "Times New Roman", serif; fill: #111; }
+      .state { fill: #fff; stroke: #111; stroke-width: 2; }
+      .edge { fill: none; stroke: #111; stroke-width: 2; marker-end: url(#arrow); }
+      .label { font-size: 18px; }
+      .name { font-size: 21px; text-anchor: middle; }
+      .caption { font-size: 17px; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <circle cx="600" cy="55" r="13" fill="#111"/>
+  <path class="edge" d="M600 68 L600 118"/>
+
+  <rect class="state" x="455" y="120" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="153">Not Logged In</text>
+  <text class="caption" x="600" y="179">(Recruiter)</text>
+
+  <rect class="state" x="455" y="300" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="333">Logged In</text>
+  <text class="caption" x="600" y="359">(Dashboard)</text>
+
+  <path class="edge" d="M600 196 L600 298"/>
+  <text class="label" x="620" y="244">valid login</text>
+
+  <path class="edge" d="M745 145 C905 100 930 210 745 177"/>
+  <text class="label" x="820" y="178">invalid details /</text>
+  <text class="label" x="820" y="201">verification required</text>
+
+  <circle cx="330" cy="338" r="18" fill="#fff" stroke="#111" stroke-width="2"/>
+  <circle cx="330" cy="338" r="12" fill="#111"/>
+  <path class="edge" d="M455 338 L350 338"/>
+  <text class="label" x="365" y="322">logout</text>
+
+  <rect class="state" x="455" y="485" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="531">Creating Job</text>
+  <path class="edge" d="M600 376 L600 483"/>
+  <text class="label" x="620" y="435">create or edit</text>
+
+  <rect class="state" x="455" y="650" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="696">Collecting Applications</text>
+  <path class="edge" d="M600 561 L600 648"/>
+  <text class="label" x="620" y="610">publish job</text>
+
+  <rect class="state" x="455" y="815" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="861">CV Review</text>
+  <path class="edge" d="M600 726 L600 813"/>
+  <text class="label" x="620" y="777">deadline reached</text>
+
+  <rect class="state" x="455" y="980" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="1026">AI Interview</text>
+  <path class="edge" d="M600 891 L600 978"/>
+  <text class="label" x="620" y="942">invite selected candidates</text>
+
+  <rect class="state" x="455" y="1145" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="1191">AI Review</text>
+  <path class="edge" d="M600 1056 L600 1143"/>
+  <text class="label" x="620" y="1107">interviews completed</text>
+
+  <rect class="state" x="455" y="1310" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="1356">HR Video Interview</text>
+  <path class="edge" d="M600 1221 L600 1308"/>
+  <text class="label" x="620" y="1272">invite final candidates</text>
+
+  <rect class="state" x="455" y="1460" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="1506">HR Review</text>
+  <path class="edge" d="M600 1386 L600 1458"/>
+  <text class="label" x="620" y="1430">interviews completed</text>
+
+  <path class="edge" d="M745 523 C1010 523 1010 338 747 338"/>
+  <text class="label" x="850" y="450">dashboard</text>
+
+  <rect class="state" x="455" y="1640" width="290" height="76" rx="32"/>
+  <text class="name" x="600" y="1686">Completed</text>
+  <path class="edge" d="M600 1546 L600 1638"/>
+  <text class="label" x="620" y="1601">record final decisions</text>
+</svg>

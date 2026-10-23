@@ -1,0 +1,493 @@
+%%  **********************************************
+%
+%   The lines beginning with "%" are comments. 
+%   Theses comments explain how to use this template for
+%   preparing the MCA Fifth Semester Mini-Project Report. 
+%
+%   The first non-comment line below contains 
+%   the matter that go into the preamble of 
+%   the input file. These are collected in a 
+%   file named "preamble.tex". 
+%
+%   Do not make any changes in the first 
+%   non-comment line below.
+%
+\input{preamble}
+%
+%   No changes in the next non-comment line.
+%
+\begin{document}
+%
+%***************************************************
+%
+%   No changes in the next comment line.
+%
+\VApaper{20MCA245 Mini Project}%
+%
+%   In the next line, replace "Report Title" by 
+%   the title of your project/thesis.
+%
+\VAtitle{SMART FARM PLANNING ASSISTANT}%
+%
+%   In the next line, replace "Student1" 
+%   by name of first student. 
+%   Write full name without, repeat without, Mr or Ms
+%
+\VAauthora{Anjana T S}%
+%
+
+%
+
+%   In the next line, replace "RegNo1" by the
+%   University Examination Register Number of first student.
+%
+\VAregisternumbera{VAS25MCA-2022}% 
+%
+%   In the next line, replace "RegNo2" by the 
+%   University Examination Register Number of second student.
+
+%
+%   In the next line, replace "2024" by the year of  
+%   your admission to the College.
+%
+\VAadmissionyear{2025}
+%
+%   In the next line, replace "Guide" by 
+%   the full name of your guide or supervisor 
+%   with Mr. or Ms. or Dr. or Prof.
+%
+\VAguide{Ms. Siji K B}% 
+%
+%   No changes in the next three non-comment lines.
+%
+\VAhod{Dr. Reji C Joy}
+%
+\VAdept{Computer Applications}%
+%
+\VAclass{S3 MCA}%
+%
+%   The next line is code to print the first few pages: 
+%       1. Title page
+%       2. Bona Fide Certificate from MCA Dept
+%       3. Declaration
+%       4. Acknowledgment
+%   No changes in the next non-comment line.
+%
+\input{frontmatter}
+%
+%****************************************************
+%
+%   No changes in the next two non-comment lines. These
+%   lines are intended to create the Synopsis page and 
+%   to add the the item "Synopsis" to 
+%   table of contents.
+%
+\chapter*{Synopsis}
+\addcontentsline{toc}{chapter}{Synopsis}
+%
+%   Enter below a synopsis of the project report. 
+%   The two lines given
+%   are to be deleted before entering actual abstract.
+
+The Smart Farm Planning Assistant is a web-based application that helps farmers choose the most suitable crop for their land and plan its cultivation. The user registers, logs in, and enters seven values: Nitrogen, Phosphorus, Potassium, temperature, humidity, pH and rainfall.
+
+After validating the inputs, the system predicts the best crop using a Random Forest machine learning model trained on the Crop Recommendation dataset, which has 2200 records covering 22 crops. The model achieved an accuracy of 99.55\% on the test data. The recommended crop and the input values are then sent to an AI model through the OpenRouter API, which generates a detailed farming plan for that crop. The result is shown to the user and saved in the database, so the user can view past recommendations from the history page.
+
+The system is developed using Python and Flask for the back end, SQLite for the database, scikit-learn for machine learning, and HTML and CSS for the front end. It is a simple and practical decision-support tool for farmers and agriculture students.
+%
+%***************************************************
+%
+%   The next three lines creates a Table of Contents 
+%   in a new page. 
+%   Do not delete this. There must be a Table of Contents.
+%
+\clearpage
+\addcontentsline{toc}{chapter}{Table of Contents}
+\tableofcontents
+%
+%   The next three lines create a page containing a 
+%   List of Tables. Delete them if there are no 
+%   tables in your project report. 
+%
+\clearpage
+\addcontentsline{toc}{chapter}{List of Tables}
+\listoftables
+%
+%   The next three line create a page containing a 
+%   List of Figures. Delete them if there are no 
+%   figures in your project report.
+%
+\clearpage
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+%
+%***************************************************
+%
+\mainmatter
+%
+\clearpage
+\quad\vfill
+\begin{center}
+{\Huge \bf PROJECT REPORT}
+\end{center}
+\vfill
+\clearpage
+%
+%
+%   The main contents of the paper begin here. 
+% 
+%
+%   *********************  CHAPTER ***********************
+%
+%  
+\chapter{INTRODUCTION}
+
+%
+\section{Problem Definition}
+Farmers often choose crops based on experience or guesswork, without checking whether their soil nutrients and climate suit that crop. A wrong choice can reduce yield and income. General farming advice is not personalised to the farmer’s own Nitrogen, Phosphorus, Potassium, temperature, humidity, pH and rainfall values, and detailed cultivation guidance is not available in one place. There is also no easy way to keep a record of past recommendations. This project solves these problems by recommending a suitable crop from the farmer’s input values using a machine learning model, generating a farming plan for that crop using AI, and saving every result so it can be viewed later.
+\section{Objectives}
+The main objective of this project is to help farmers choose the most suitable crop using seven input values: Nitrogen, Phosphorus, Potassium, temperature, humidity, pH and rainfall. The system validates these inputs so that wrong or out-of-range values are not accepted, and then predicts the crop using a Random Forest machine learning model with high accuracy. It also generates a detailed AI-based farming plan for the recommended crop. To keep the system safe and useful, it provides secure signup and login with password hashing, and saves every recommendation in a database so that users can view their history later.
+%
+\section{Purpose of the Project}
+The purpose of this project is to help farmers make better decisions about what to grow. Instead of depending on guesswork, the farmer enters the soil and weather values and gets a crop recommendation that suits those conditions. The system also gives a detailed farming plan for the recommended crop, so the farmer knows how to start cultivation. By saving every recommendation, the project lets users go back and review their earlier results. Overall, it aims to reduce the risk of choosing the wrong crop and to support better yield and income.
+%
+%   *********************  CHAPTER ***********************
+%
+%
+\chapter{SYSTEM ANALYSIS}
+%
+\section{The Existing System}
+At present, most farmers choose crops based on their own experience, advice from neighbours, or local agriculture officers. Some use general agriculture websites or books, but these give common information and do not consider the farmer’s own soil nutrient values (Nitrogen, Phosphorus, Potassium, pH) and weather conditions (temperature, humidity, rainfall). Detailed cultivation guidance is spread across many sources and takes time to find. There is also no system that keeps a record of past recommendations, so farmers cannot review earlier decisions. Because of these limitations, there is a higher risk of choosing a wrong crop, which can reduce yield and income.	
+
+%< Describe your various components here >
+\section{Proposed System}
+The proposed system is a web-based application called Smart Farm Planning Assistant. The farmer first creates an account and logs in securely. Then the farmer enters seven values: Nitrogen, Phosphorus, Potassium, temperature, humidity, pH and rainfall. The system checks these values and rejects wrong or out-of-range inputs. A Random Forest machine learning model, trained on the Crop Recommendation dataset with 2200 records and 22 crops, predicts the most suitable crop. The model achieved an accuracy of 99.55\% on the test data. The recommended crop and the input values are then sent to an AI model through the OpenRouter API, which generates a detailed farming plan. The result is displayed to the farmer and saved in the database, so it can be viewed later from the history page. In this way, the system gives personalised crop recommendation, practical farming guidance and a record of past results in one place.
+%
+%
+%   *********************  CHAPTER ***********************
+%
+%
+\chapter{FEASIBILITY STUDY}
+%
+\section{Technical Feasibility}
+The proposed system is technically feasible because it uses well-known, free and open-source technologies. The back end is built with Python and Flask, the database is SQLite, and the machine learning model is built with scikit-learn (Random Forest) and saved using joblib. The front end uses HTML and CSS, so it runs in any modern web browser such as Chrome or Edge. The AI farming plan is generated through the OpenRouter API using a free model. The Crop Recommendation dataset is publicly available, and the trained model gives an accuracy of 99.55\% on the test data. The system runs on a normal computer with an i3 processor, 4 GB RAM and Windows 11, and it needs only an internet connection for generating the AI plan. Since the application was developed and tested successfully with these tools, it is technically feasible.
+%
+\section{Economical Feasibility}
+The proposed system is economically feasible because it needs almost no investment. All the tools used are free and open-source: Python, Flask, SQLite, scikit-learn and VS Code. The Crop Recommendation dataset is publicly available, and the AI farming plan is generated using a free model through the OpenRouter API. No paid software, server or special hardware is required, as the system runs on a normal computer. Since there is no development or maintenance cost for licences, and the system can help farmers avoid losses from choosing a wrong crop, the project gives good benefit at very low cost.
+%
+\section{Operational Feasibility}
+The proposed system is operationally feasible because it is simple and easy to use. The farmer only needs to sign up, log in and enter seven values in a form. The system then shows the recommended crop and a farming plan on the screen, and saves the result in the history page. The pages have a clean design with a sidebar, so users can move easily between the dashboard, recommendation, history and profile pages. No special training is needed, and the system works in any modern web browser. The main testing cases for signup, login, prediction, history and security were completed successfully, so the system works as expected in real use.
+%
+\chapter{SYSTEM DESIGN}
+%
+\section{Input Design}
+ In this project, all inputs are entered through simple web forms, so the farmer needs no technical knowledge.
+
+\begin{itemize}
+\item Signup Form: Name, Email and Password. The password is stored in hashed form.
+\item Login Form: Email and Password. Email is not case sensitive. Wrong details show the message “Invalid email or password”.
+\item Crop Recommendation Form: Seven values: Nitrogen (N), Phosphorus (P), Potassium (K), temperature, humidity, pH and rainfall. Every value is checked against a fixed allowed range before prediction. Empty, non-numeric or out-of-range values are not accepted, and all errors are shown together on the same page so the user can correct them at once.
+\item History Selection: The user clicks a saved recommendation in the history page to open its details.
+\end{itemize}
+\
+%
+\section{Output Design}
+ In this project, all outputs are displayed on clean web pages with a common sidebar design, so the user can move easily between pages.
+\begin{itemize}
+\item Dashboard: The home page after login, with links to the recommendation, history and profile pages.
+\item Result Page: Shows the recommended crop, the input values given by the user, and the AI-generated farming plan for that crop.
+\item History Page: Shows the list of past recommendations with the crop name and date. Clicking one opens its full result page.
+\item Profile Page: Shows the user’s account details.
+\item Messages: Validation errors and the login error message “Invalid email or password” are shown clearly on the same page.
+\end{itemize}
+%
+\section{Database Design}
+The system uses SQLite, a lightweight database stored in a single file (smartfarm.db). Data is stored in two related tables, users and recommendations. One user can have many recommendations, so the tables are linked by the user’s ID. Each table has a unique primary key, and the email is unique so the same email cannot be registered twice. Passwords are never stored as plain text; only the hashed form is saved. Each recommendation stores the crop, the input values, the AI plan and the date and time. Every query is run only for the logged-in user, so one user cannot see another user’s records.
+%
+%
+%   *********************  CHAPTER ***********************
+%
+%
+\chapter{IMPLEMENTATION, TESTING AND VALIDATION}
+%
+\section{Implementation}
+The Smart Farm Planning Assistant is implemented as a web application using Python and Flask. The project is built in the following parts. First, the Random Forest model is trained on the Crop Recommendation dataset using scikit-learn, and the trained model is saved as a file using joblib. The Flask application loads this saved model when it starts. The user signs up and logs in, and the session keeps the user logged in while using the pages. On the recommendation page, the seven input values are validated and then passed to the model, which predicts the most suitable crop. The recommended crop and the inputs are sent to the OpenRouter API, which returns a detailed farming plan. The crop, inputs, plan and date are saved in the SQLite database, and the result is shown on the result page. The history page lists the saved recommendations of the logged-in user, and each one can be opened again. The pages are designed with HTML and CSS, with a common sidebar for easy navigation. The API key is kept in a separate .env file and not written in the code, to keep it safe. After development, the system was tested for signup, login, prediction, history and security, and all the main test cases passed.
+%
+\section{Testing Methods}
+The system was tested using the following methods to make sure it works correctly and safely.
+\begin{itemize}
+\item  Unit Testing: Each small part was tested separately, such as signup, login, input validation and crop prediction.
+
+\item Integration Testing: The parts were tested together to check that the full flow works: login, entering the seven values, prediction, AI plan generation, saving in the database, and showing the result and history.
+
+\item Validation Testing: Empty, non-numeric and out-of-range values were entered to check that the system rejects them and shows all the errors together.
+
+\item  Security Testing: A SQL injection attempt was made on the login page. The system showed “Invalid email or password” and did not allow access. Opening an invalid history ID (for example /history/9999) did not crash the system; it redirected to the history page.
+
+\item  User Interface Testing: All pages (dashboard, recommend, result, history, profile) were checked for the same design and sidebar, and for easy navigation.
+
+\item Model Testing: The Random Forest model was tested on 20\% of the dataset (440 rows). It predicted 438 rows correctly, giving an accuracy of 99.55\%.
+\end{itemize}
+% < Describe the various Testing methods used here >
+\section{Validation}
+In this project, validation is done in the following ways.
+\begin{itemize}
+\item Input Validation: The seven values (Nitrogen, Phosphorus, Potassium, temperature, humidity, pH and rainfall) are checked against a fixed allowed range before prediction. Empty, non-numeric and out-of-range values are rejected, and all the errors are shown together on the same page so the user can correct them at once.
+
+\item Login Validation: The email and password are checked against the saved records. The email is not case sensitive. If the details are wrong, the system shows only “Invalid email or password”, so it does not reveal which one was wrong.
+
+\item Access Validation: Pages like dashboard, recommend, history and profile can be opened only after login. A user can see only his or her own saved recommendations, and an invalid history ID safely redirects to the history page.
+
+\item Model Validation: The Random Forest model was validated by testing it on 20\% of the dataset (440 rows). It predicted 438 rows correctly, giving an accuracy of 99.55\%.
+\end{itemize}
+%	< Validation done in the project >
+%
+%   *********************  CHAPTER ***********************
+%
+\chapter{CONCLUSION}
+The Smart Farm Planning Assistant helps farmers choose the right crop instead of depending on guesswork. The farmer enters seven soil and weather values, and the system recommends a suitable crop using a Random Forest model with an accuracy of 99.55\%. It also generates a detailed farming plan using AI and saves every result, so users can view their history later. The system is simple to use, secure, and built with free tools, and all the main test cases were completed successfully. In future, it can be improved by showing all input values in the history list, using live weather data and soil sensors, and supporting regional languages such as Malayalam. Overall, the project shows how machine learning and AI can support better farming decisions.
+%
+%   *********************  CHAPTER ***********************
+%
+\chapter{SCOPE FOR FUTURE ENHANCEMENT}
+The Smart Farm Planning Assistant can be improved in many ways in the future.
+\begin{itemize}
+\item Full details in history list: Show all seven input values along with the crop name and date in the history list page.
+\item Live weather data: Get temperature, humidity and rainfall automatically from a weather service, so the farmer does not need to enter them.
+\item Soil sensors: Connect soil sensors to read Nitrogen, Phosphorus, Potassium and pH values directly from the field.
+\item Regional languages: Support languages such as Malayalam, so more farmers can use the system easily.
+\item Mobile application: Develop an Android app so farmers can use the system on their phones.
+\item More crops and bigger dataset: Add more crops and more data to make the recommendation wider and more accurate.
+\item Fertilizer and disease guidance: Suggest suitable fertilizers and give help for common crop diseases.
+\end{itemize}
+%
+%
+%   *********************  CHAPTER ***********************
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%  APPENDICES %%%%%%%%%%%%%%%%%%%%%
+%
+\clearpage
+\addcontentsline{toc}{chapter}{APPENDICES}
+\appendix
+\quad\vfill
+\begin{center}
+{\Huge \bf APPENDICES}
+\end{center}
+\vfill
+\clearpage
+%
+%
+%   *********************  CHAPTER ***********************
+%
+%
+\chapter{SCRUM PROCESS ARTIFACTS}
+%
+\section{Product Backlog}
+%
+% The following table is only a sample. 
+%
+\renewcommand{\arraystretch}{1.25}
+\begin{center}
+\begin{tabular}{|m{0.08\textwidth}|m{0.15\textwidth}|m{0.5\textwidth}|m{0.1\textwidth}|}
+\hline
+{\bf Priority} & {\bf Product backlog items} & {\bf User story} & {\bf Estimate (Hours)}\\
+\hline
+1 & Dataset and model training & As a developer, I want to train a Random Forest model on the crop dataset so that crops can be predicted. & 40 \\
+\hline
+2 & Database creation & As a developer, I want to store user details and recommendations in a database. & 20 \\
+\hline
+3 & Signup and login & As a farmer, I want to sign up and log in securely to use the system.& 30\\
+\hline
+4 & Crop recommendation & As a farmer, I want to enter soil and weather values and get a suitable crop. & 40\\
+\hline
+5 & Input validation &As a farmer, I want wrong values to be rejected with clear error messages. & 20 \\
+\hline
+6 & AI farming plan &As a farmer, I want a detailed farming plan for the recommended crop. & 40\\
+\hline
+7 & 	History page&As a farmer, I want to view my past recommendations later.&20\\
+\hline
+8&	Dashboard and profile&As a farmer, I want a home page and a profile page to move around easily.&20\\
+\hline
+9&Testing&As a developer, I want to test all features so that the system works correctly.&30\\
+
+\end{tabular}
+\end{center}
+%
+\section{Scrum Meeting Details}
+%
+\begin{center}
+\begin{tabular}{|m{0.03\textwidth}|m{0.05\textwidth}|m{0.3\textwidth}|m{0.2\textwidth}|m{0.2\textwidth}|}
+\hline
+Sl. No. & Date & Sprint backlog & Product shippable Increment & Important Decisions \\
+\hline
+1 & &Dataset and model training, database creation & Trained model file and database ready & Use Random Forest, SQLite and Flask0 \\
+\hline
+2 && Signup and login & Users can sign up, log in and log out &Store passwords in hashed form\\
+\hline
+3 && Crop recommendation and input validation & Crop prediction with validation working& Fix allowed ranges for all 7 inpu\\
+\hline
+4 && AI farming plan and history page & Plan generated and saved, history page working & Use a free OpenRouter model; keep API key in .env\\
+\hline
+5 & &Dashboard, profile and common design &All pages with same design and sidebar& Use a common sidebar in all pages \\
+\hline
+6 && Testing and bug fixing &All main test cases passed & Keep history list simple (crop name and date)\\
+\hline
+
+\end{tabular}
+\end{center}
+
+\renewcommand{\arraystretch}{1}
+%
+%   *********************  APPENDIX ***********************
+%
+\chapter{UML DIAGRAMS}
+\section{Class Diagram}
+%
+\begin{figure}
+   \centering
+    \includegraphics[width=4.95cm]{Class_Diagram.png}
+    \caption{Class Diagram of Smart Farm Planning Assistant}
+    \label{fig:class-diagram}
+\end{figure}
+\begin{figure}
+   \centering
+    \includegraphics[width=10cm]{State_Diagram.png}
+    \caption{State Diagram of Smart Farm Planning Assistant}
+    \label{fig:state-diagram}
+\end{figure}
+\section{State Diagram}
+%
+%
+%   *********************  APPENDIX ***********************
+%
+\chapter{TABLE STRUCTURE}
+\begin{table}
+ \centering
+  \begin{tabular}{|l|l|l|l|l|}
+    \hline 
+  \textbf{ Sl. No.}&  \textbf{Field}& \textbf{ Datatype}& \textbf{ Constraint}&\textbf{ Description} \\
+     \hline  
+    1 & id &Integer &Primary Key  & Unique ID of the user\\ 
+      \hline 
+     2 & name  & Text & Not Null &  Name of the user\\
+     \hline 
+     3  & email & Text & Unique,Not Null & Email used for login \\ 
+				\hline
+     4&password&Text&Not Null&Password stored in hashed form\\
+     \hline
+    \end{tabular}
+    \caption{Users Table}
+\label{table:users}
+\end{table}
+\begin{table}
+ \centering
+  \begin{tabular}{|l|l|l|l|l|}
+    \hline 
+   \textbf{Sl. No.}& \textbf{ Field}& \textbf{ Datatype}& \textbf{ Constraint}&\textbf{ Description} \\
+     \hline  
+    1 & id& Integer &Primary Key  &Unique ID of the recommendation \\ 
+      \hline 
+     2 & user\_id & Integer& Foreign Key (users.id)&User who made the request\\
+     \hline 
+     3  & crop & Text & Not Null & Recommended crop name \\ 
+				\hline
+	4&inputs&Text&&The seven input values given by the user\\
+	\hline
+	5&plan&Text&&AI-generated farming plan\\
+	\hline
+	6&created\_at&Text&&Date and time of the recommendation\\
+	\hline
+    \end{tabular}
+    \caption{Recommendations Table}
+\label{table:recommendations}
+\end{table}
+
+%   *********************  APPENDIX ***********************
+%
+\chapter{SAMPLE SCREENSHOTS}
+
+
+%
+%
+% ***   Creating Bibliography   ***
+%
+% Do not delete the following two lines
+%
+\clearpage
+\addcontentsline{toc}{chapter}{Bibliography}
+%
+%   The markups for creating the bibliography 
+%   begins here. Do not change the two lines 
+%   "\begin{thebibliography}{99}" and 
+%   "\end{thebibliography}".
+%   One sample bibliography item is included. 
+%   Each new item is to be preceded by
+%   "\bibitem{itemx}".
+%   Add additional items if there are any.
+%   Bibliography styles:
+%   Titles of books   : Italics  {use {\em Title} )
+%   URLs of websites  : Type-writer (use {\tt Title} )
+%   Titles of papers  : In double quotes (use ``Title")
+%
+\begin{thebibliography}{99}
+%
+\bibitem{item1}
+{\em First Lessons in \LaTeX}, by Dr. V N Krishnachandran, 
+Vidya Academy of Science \& Technology, 
+Thrissur - 680 501, 2011.
+
+\bibitem{item2}
+L.~Breiman, ``Random Forests,'' {\em Machine Learning}, vol.~45, no.~1, pp.~5--32, 2001.
+
+\bibitem{item3}
+F.~Pedregosa et al., ``Scikit-learn: Machine Learning in Python,'' {\em Journal of Machine Learning Research}, vol.~12, pp.~2825--2830, 2011.
+
+\bibitem{item4}
+A.~G\'{e}ron, {\em Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow}, 2nd ed., O'Reilly Media, 2019.
+
+\bibitem{item5}
+M.~Grinberg, {\em Flask Web Development}, 2nd ed., O'Reilly Media, 2018.
+
+\bibitem{item6}
+I.~Sommerville, {\em Software Engineering}, 10th ed., Pearson, 2015.
+
+\bibitem{item7}
+R.~S.~Pressman and B.~R.~Maxim, {\em Software Engineering: A Practitioner's Approach}, 8th ed., McGraw-Hill Education, 2014.
+
+\bibitem{item8}
+K.~Schwaber and J.~Sutherland, {\em The Scrum Guide}, 2020. Available: https://scrumguides.org
+
+\bibitem{item9}
+Pallets Projects, {\em Flask Documentation}. Available: https://flask.palletsprojects.com
+
+\bibitem{item10}
+SQLite Consortium, {\em SQLite Documentation}. Available: https://www.sqlite.org/docs.html
+
+\bibitem{item11}
+scikit-learn developers, {\em scikit-learn: Machine Learning in Python}. Available: https://scikit-learn.org
+
+\bibitem{item12}
+OpenRouter, {\em OpenRouter API Documentation}. Available: https://openrouter.ai/docs
+
+\bibitem{item13}
+A.~Ingle, {\em Crop Recommendation Dataset}, Kaggle. Available: https://www.kaggle.com/datasets/atharvaingle/crop-recommendation-dataset
+
+
+
+
+
+
+
+%
+\end{thebibliography}
+%
+%
+%   Printing the last page
+%
+\input{lastpage}
+%
+%
+%   ***   The end   ***
+%
+%
+\end{document}

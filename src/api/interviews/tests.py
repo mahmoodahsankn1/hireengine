@@ -326,6 +326,23 @@ class Phase5AIInterviewTests(TestCase):
         self.intv1.refresh_from_db()
         self.assertEqual(self.intv1.status, 'incomplete')
 
+    def test_ai_interview_finish_with_only_interviewer_turn_marks_incomplete(self):
+        self.intv1.status = 'in_progress'
+        self.intv1.started_at = self.now
+        self.intv1.save()
+
+        resp = self.client.post(
+            f'/api/ai-interview/{self.intv1.access_token}/finish/',
+            data={"transcript": [{"speaker": "assistant", "text": "Can you introduce yourself?"}]},
+            content_type='application/json'
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['status'], 'incomplete')
+
+        self.intv1.refresh_from_db()
+        self.assertEqual(self.intv1.status, 'incomplete')
+
     def test_ai_interview_finish_with_transcript_scores_and_completes(self):
         from interviews.models import AIResult
         from interviews.tasks import score_interview_task
@@ -336,9 +353,9 @@ class Phase5AIInterviewTests(TestCase):
 
         sample_transcript = [
             {"speaker": "assistant", "text": "Welcome Alice. Can you explain your experience with Python and asynchronous workers?", "time": self.now.isoformat()},
-            {"speaker": "user", "text": "I have built large-scale Celery task pipelines and Django REST architectures handling asynchronous data feeds.", "time": self.now.isoformat()},
+            {"speaker": "user", "text": "I have built large-scale Celery task pipelines and Django REST architectures handling asynchronous data feeds.", "time": self.now.isoformat(), "response_duration_seconds": 42},
             {"speaker": "assistant", "text": "Great. How do you handle database race conditions?", "time": self.now.isoformat()},
-            {"speaker": "user", "text": "I use select_for_update inside atomic database transactions and PostgreSQL exclusion constraints.", "time": self.now.isoformat()}
+            {"speaker": "user", "text": "I use select_for_update inside atomic database transactions and PostgreSQL exclusion constraints.", "time": self.now.isoformat(), "response_duration_seconds": 18}
         ]
 
         resp = self.client.post(
@@ -354,7 +371,10 @@ class Phase5AIInterviewTests(TestCase):
 
         ai_result = AIResult.objects.get(interview=self.intv1)
         self.assertIsNotNone(ai_result)
-        self.assertEqual(len(ai_result.transcript), 4)
+        self.assertEqual(len(ai_result.transcript['turns']), 4)
+        self.assertEqual(ai_result.transcript['turns'][1]['response_duration_seconds'], 42)
+        self.assertGreater(ai_result.transcript['total_duration_seconds'], 0)
+        self.assertEqual(ai_result.transcript['candidate_response_count'], 2)
 
         # Run scoring task
         score_interview_task(str(ai_result.id))
@@ -364,6 +384,43 @@ class Phase5AIInterviewTests(TestCase):
         self.assertIn('scores', ai_result.score_breakdown)
         self.assertIn('technical', ai_result.score_breakdown['scores'])
         self.assertIn('justification', ai_result.score_breakdown)
+
+    def test_hr_interview_feedback_requires_and_saves_rating(self):
+        from rest_framework.test import APIClient
+        from interviews.models import Feedback
+
+        interview = Interview.objects.create(
+            job=self.job,
+            application=self.app1,
+            hr=self.hr,
+            kind='hr',
+            start_at=self.now,
+            duration_minutes=30,
+            reserved_until=self.now + timedelta(minutes=35),
+            join_opens_at=self.now - timedelta(minutes=5),
+            join_closes_at=self.now + timedelta(minutes=30),
+            access_token='token_alice_hr_feedback',
+            status='in_progress',
+            started_at=self.now,
+        )
+        client = APIClient()
+        client.force_authenticate(user=self.hr)
+
+        missing_rating = client.post(
+            f'/api/interviews/{interview.id}/feedback/',
+            {'decision': 'selected', 'notes': 'Strong communication'},
+            format='json'
+        )
+        self.assertEqual(missing_rating.status_code, 400)
+        self.assertFalse(Feedback.objects.filter(interview=interview).exists())
+
+        saved_feedback = client.post(
+            f'/api/interviews/{interview.id}/feedback/',
+            {'decision': 'selected', 'rating': 8, 'notes': 'Strong communication'},
+            format='json'
+        )
+        self.assertEqual(saved_feedback.status_code, 201)
+        self.assertEqual(Feedback.objects.get(interview=interview).rating, 8)
 
     def test_beat_mark_no_shows(self):
         from interviews.tasks import mark_no_shows
@@ -448,4 +505,3 @@ class Phase5AIInterviewTests(TestCase):
         round2 = JobRound.objects.get(job=self.job, round=2)
         self.assertIsNotNone(round2.completed_at)
         self.assertIsNotNone(round2.hr_notified_at)
-

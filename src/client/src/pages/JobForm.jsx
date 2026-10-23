@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import api from '../services/api'
 import Navbar from '../components/Navbar'
 
-const SKILL_LEVELS = ['must', 'nice']
 const EMPLOYMENT_TYPES = [
   { value: 'full_time',   label: 'Full Time' },
   { value: 'part_time',   label: 'Part Time' },
@@ -61,7 +60,7 @@ export default function JobForm() {
   const [capacity, setCapacity] = useState({ ai: null, hr: null })
 
   // Load job when editing
-  const { data: jobData } = useQuery({
+  const { data: jobData, isLoading: loadingJob } = useQuery({
     queryKey: ['job', id],
     queryFn: () => api.get(`/jobs/${id}/`).then(r => r.data),
     enabled: isEdit,
@@ -219,25 +218,31 @@ export default function JobForm() {
   return (
     <>
       <Navbar />
-      <div className="page" style={{ maxWidth: 860 }}>
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">{isEdit ? 'Edit Job' : 'Post a New Job'}</h1>
-            <p className="page-subtitle">
-              {isEdit ? `Editing: ${jobData?.title || '…'}` : 'Fill in the details to create a job posting'}
-            </p>
+      <main className="page job-form-page">
+        <header className="job-form-header">
+          <div className="job-form-heading">
+            <span className="job-form-eyebrow">{isEdit ? 'JOB WORKSPACE / EDIT ROLE' : 'JOB WORKSPACE / NEW ROLE'}</span>
+            <h1>{isEdit ? 'Refine your job posting' : 'Create a standout job posting'}</h1>
+            <p>{isEdit ? `Update the role details${jobData?.title ? ` for ${jobData.title}` : ''}.` : 'Set the role requirements, interview stages, and candidate schedule in one place.'}</p>
           </div>
-        </div>
+          <div className="job-form-header-mark" aria-hidden="true"><span>HE</span></div>
+        </header>
 
         {serverError && (
-          <div className="alert alert-error" style={{ marginBottom: '1.5rem' }}>{serverError}</div>
+          <div className="alert alert-error job-form-server-error" role="alert">{serverError}</div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {loadingJob ? (
+          <div className="card job-form-loading"><span className="spinner" /> Loading job details…</div>
+        ) : (
+        <form onSubmit={handleSubmit} className="job-form">
 
           {/* ── Basic Info ── */}
-          <div className="card">
-            <div className="form-section-title">Basic Information</div>
+          <section className="card job-form-section">
+            <div className="job-form-section-heading">
+              <span className="job-form-step">01</span>
+              <div><h2>Role details</h2><p>Give candidates a clear picture of the position.</p></div>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="form-group">
                 <label className="form-label">Job Title *</label>
@@ -302,11 +307,14 @@ export default function JobForm() {
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* ── Required Skills ── */}
-          <div className="card">
-            <div className="form-section-title">Required Skills</div>
+          <section className="card job-form-section">
+            <div className="job-form-section-heading">
+              <span className="job-form-step">02</span>
+              <div><h2>Skills &amp; requirements</h2><p>Separate essential experience from additional strengths.</p></div>
+            </div>
             {hasApplications && (
               <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
                 Skills are locked after the first application is received.
@@ -339,11 +347,14 @@ export default function JobForm() {
                 + Add Skill
               </button>
             )}
-          </div>
+          </section>
 
           {/* ── Shortlist & Scoring ── */}
-          <div className="card">
-            <div className="form-section-title">Shortlist & Scoring</div>
+          <section className="card job-form-section">
+            <div className="job-form-section-heading">
+              <span className="job-form-step">03</span>
+              <div><h2>Screening &amp; shortlist</h2><p>Configure candidate cutoffs and interview capacity.</p></div>
+            </div>
             <div className="job-form-grid">
               <div className="form-group">
                 <label className="form-label">AI Shortlist Count *</label>
@@ -365,11 +376,14 @@ export default function JobForm() {
                   placeholder="Optional" value={form.min_cv_score} onChange={handleChange} />
               </div>
             </div>
-          </div>
+          </section>
 
           {/* ── AI Interview Settings ── */}
-          <div className="card">
-            <div className="form-section-title">AI Interview Settings</div>
+          <section className="card job-form-section">
+            <div className="job-form-section-heading">
+              <span className="job-form-step">04</span>
+              <div><h2>AI interview</h2><p>Choose the interview focus and time allowance.</p></div>
+            </div>
             <div className="form-group" style={{ marginBottom: '1rem' }}>
               <label className="form-label">Custom Interview Prompt</label>
               <textarea id="job-ai-prompt" name="ai_interview_prompt" className="form-textarea"
@@ -400,11 +414,14 @@ export default function JobForm() {
                 {errors.ai_late_grace_minutes && <span className="form-error">{errors.ai_late_grace_minutes}</span>}
               </div>
             </div>
-          </div>
+          </section>
 
           {/* ── HR Interview Settings ── */}
-          <div className="card">
-            <div className="form-section-title">HR Interview Settings</div>
+          <section className="card job-form-section">
+            <div className="job-form-section-heading">
+              <span className="job-form-step">05</span>
+              <div><h2>Live interview</h2><p>Set the duration and joining window for recruiter meetings.</p></div>
+            </div>
             <div className="job-form-grid">
               <div className="form-group">
                 <label className="form-label">Duration (min)</label>
@@ -422,12 +439,15 @@ export default function JobForm() {
                   value={form.hr_join_early_minutes} onChange={handleChange} />
               </div>
             </div>
-          </div>
+          </section>
 
           {/* ── Availability Windows ── */}
-          <div className="card">
-            <div className="form-section-title">Availability Windows</div>
-            <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+          <section className="card job-form-section">
+            <div className="job-form-section-heading">
+              <span className="job-form-step">06</span>
+              <div><h2>Interview availability</h2><p>Publish the slots candidates can book for each interview stage.</p></div>
+            </div>
+            <p className="job-form-help">
               All windows must start after the application deadline. HR windows must be after AI windows.
             </p>
             {errors.availability_windows && (
@@ -483,19 +503,23 @@ export default function JobForm() {
                 + Add HR Window
               </button>
             </div>
-          </div>
+          </section>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '1rem', paddingBottom: '2rem' }}>
-            <button id="job-save" type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+          <div className="job-form-actions">
+            <div><strong>{isEdit ? 'Ready to update this role?' : 'Ready to publish this role?'}</strong><span>Review your details before saving.</span></div>
+            <div className="job-form-action-buttons">
+              <button id="job-save" type="submit" className="btn btn-primary btn-lg" disabled={loading}>
               {loading ? <><span className="spinner" /> Saving…</> : (isEdit ? 'Save Changes' : 'Create Job')}
-            </button>
-            <button type="button" className="btn btn-secondary btn-lg" onClick={() => navigate(-1)}>
-              Cancel
-            </button>
+              </button>
+              <button type="button" className="btn btn-secondary btn-lg" onClick={() => navigate(-1)}>
+                Cancel
+              </button>
+            </div>
           </div>
         </form>
-      </div>
+        )}
+      </main>
     </>
   )
 }

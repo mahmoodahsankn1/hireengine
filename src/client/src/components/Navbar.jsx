@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { BrandLogo } from './common/BrandLogo'
 
-export default function Navbar() {
+export default function Navbar({ className = '' }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -16,7 +16,7 @@ export default function Navbar() {
     : 'HR'
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${className}`.trim()}>
       <div className="navbar-inner">
         <Link to="/dashboard" className="navbar-brand" aria-label="HireEngine HR dashboard">
           <BrandLogo className="navbar-brand-content" />

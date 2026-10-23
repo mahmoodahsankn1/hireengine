@@ -5,7 +5,8 @@ import {
   FileText, CheckCircle, AlertTriangle, RefreshCw, Eye, 
   X, Sparkles, Award, Shield, User, ArrowRight,
   Send, CheckSquare, Square, Clock, Users, Mail, AlertCircle,
-  MessageSquare, Volume2, Video, ExternalLink
+  MessageSquare, Volume2, Video, ExternalLink, ArrowLeft,
+  MapPin, CalendarDays, Building2, ClipboardList, Settings, UsersRound
 } from 'lucide-react'
 import api from '../services/api'
 import Navbar from '../components/Navbar'
@@ -27,6 +28,18 @@ function formatDate(dt) {
   return new Date(dt).toLocaleString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   })
+}
+
+function getTranscriptTurns(transcript) {
+  if (Array.isArray(transcript)) return transcript
+  return Array.isArray(transcript?.turns) ? transcript.turns : []
+}
+
+function formatDuration(seconds) {
+  const duration = Math.max(0, Number(seconds) || 0)
+  const minutes = Math.floor(duration / 60)
+  const remainder = duration % 60
+  return `${minutes}m ${remainder}s`
 }
 
 export default function JobDetail() {
@@ -149,7 +162,7 @@ export default function JobDetail() {
 
   if (isLoading) return (
     <>
-      <Navbar />
+      <Navbar className="dashboard-navbar" />
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="spinner" style={{ width: '2rem', height: '2rem' }} />
       </div>
@@ -158,7 +171,7 @@ export default function JobDetail() {
 
   if (error || !job) return (
     <>
-      <Navbar />
+      <Navbar className="dashboard-navbar" />
       <div className="page">
         <div className="alert alert-error">Could not load job. <Link to="/dashboard">← Back</Link></div>
       </div>
@@ -196,46 +209,48 @@ export default function JobDetail() {
 
   return (
     <>
-      <Navbar />
-      <div className="page">
-        {/* Header */}
-        <div className="page-header">
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-              <Link to="/dashboard" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Dashboard</Link>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <h1 className="page-title">{job.title}</h1>
-              <span className={`badge ${STAGE_BADGE[job.stage] || 'badge-muted'}`} style={{ fontSize: '0.8rem' }}>
+      <Navbar className="dashboard-navbar" />
+      <main className="job-detail-page">
+        <div className="job-detail-heading">
+          <div className="job-detail-heading-main">
+            <Link to="/dashboard" className="job-detail-back"><ArrowLeft size={15} aria-hidden="true" /> Back to Dashboard</Link>
+            <div className="job-detail-title-row">
+              <h1 className="job-detail-title">{job.title}</h1>
+              <span className={`job-detail-stage badge ${STAGE_BADGE[job.stage] || 'badge-muted'}`}>
                 {STAGE_LABELS[job.stage] || job.stage}
               </span>
             </div>
-            <p className="page-subtitle">{job.location} · {job.employment_type?.replace('_', ' ')} · {job.work_mode}</p>
+            <div className="job-detail-meta">
+              <span><MapPin size={15} aria-hidden="true" /> {job.location || 'Location not specified'}</span>
+              <i>·</i>
+              <span><CalendarDays size={15} aria-hidden="true" /> {job.employment_type?.replaceAll('_', ' ') || 'Employment type not specified'}</span>
+              <i>·</i>
+              <span><Building2 size={15} aria-hidden="true" /> {job.work_mode || 'Work mode not specified'}</span>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
+          <div className="job-detail-actions">
             {job.stage === 'draft' && (
-              <button id="publish-btn" className="btn btn-primary" onClick={handlePublish}>🚀 Publish</button>
+              <button id="publish-btn" className="btn btn-primary" onClick={handlePublish}>Publish</button>
             )}
             {job.stage !== 'draft' && job.form_slug && (
-              <button id="copy-link-btn" className="btn btn-secondary" onClick={copyLink}>📋 Copy Apply Link</button>
+              <button id="copy-link-btn" className="btn btn-secondary job-copy-action" onClick={copyLink}><ClipboardList size={16} aria-hidden="true" /> Copy Apply Link</button>
             )}
             {['cv_review', 'ai_review', 'hr_review'].includes(job.stage) && (
-              <button 
+              <button
                 id="header-send-btn"
-                className="btn btn-primary"
-                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)' }}
+                className="btn btn-primary job-send-action"
                 onClick={openSendModal}
               >
                 <Send size={15} /> Send Invitations
               </button>
             )}
-            <Link id="edit-btn" to={`/jobs/${id}/edit`} className="btn btn-secondary">✏️ Edit</Link>
+            <Link id="edit-btn" to={`/jobs/${id}/edit`} className="btn btn-secondary job-edit-action">Edit</Link>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="tabs">
+        <div className="tabs job-detail-tabs">
           {[
             { key: 'overview', label: 'Overview' },
             { key: 'round1',   label: `Round 1 · CV (${totalCount || job.applications_count || 0})` },
@@ -252,10 +267,10 @@ export default function JobDetail() {
 
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-            <div className="card">
-              <h3 style={{ marginBottom: '1rem' }}>Job Details</h3>
-              <dl style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+          <div className="job-overview-grid">
+            <section className="card job-overview-card">
+              <h3 className="job-overview-card-title"><span><FileText size={16} aria-hidden="true" /></span>Job Details</h3>
+              <dl className="job-details-list">
                 {[
                   ['Deadline', formatDate(job.application_deadline)],
                   ['Published', formatDate(job.published_at)],
@@ -265,39 +280,41 @@ export default function JobDetail() {
                   ['Salary', job.salary_range || '—'],
                   ['Min Experience', `${job.min_experience_years} yr(s)`],
                 ].map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
-                    <dt style={{ color: 'var(--text-muted)' }}>{k}</dt>
-                    <dd style={{ fontWeight: 500 }}>{v}</dd>
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
                   </div>
                 ))}
               </dl>
-            </div>
+            </section>
 
-            <div className="card">
-              <h3 style={{ marginBottom: '1rem' }}>Required Skills</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginBottom: '1.5rem' }}>
+            <section className="card job-overview-card job-skills-card">
+              <h3 className="job-overview-card-title"><span><Settings size={16} aria-hidden="true" /></span>Required Skills</h3>
+              <div className="job-skill-list">
                 {(job.required_skills || []).map((sk, i) => (
-                  <span key={i} className={`badge ${sk.level === 'must' ? 'badge-danger' : 'badge-muted'}`}>
+                  <span key={i} className={`job-skill-tag ${sk.level === 'must' ? 'skill-must' : 'skill-nice'}`}>
                     {sk.skill} · {sk.level}
                   </span>
                 ))}
               </div>
 
-              <h3 style={{ marginBottom: '0.75rem' }}>Capacity & Allocation</h3>
-              <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
-                <span className={`capacity-badge ${job.ai_capacity >= job.ai_shortlist_count ? 'capacity-ok' : 'capacity-error'}`}>
+              <div className="job-capacity-section">
+                <h3 className="job-overview-card-title"><span><UsersRound size={16} aria-hidden="true" /></span>Capacity & Allocation</h3>
+                <div className="job-capacity-list">
+                  <span className={`capacity-badge ${job.ai_capacity >= job.ai_shortlist_count ? 'capacity-ok' : 'capacity-error'}`}>
                   AI: {job.ai_capacity ?? 0} / {job.ai_shortlist_count} slots
-                </span>
-                <span className={`capacity-badge ${job.hr_capacity >= job.final_shortlist_count ? 'capacity-ok' : 'capacity-error'}`}>
+                  </span>
+                  <span className={`capacity-badge ${job.hr_capacity >= job.final_shortlist_count ? 'capacity-ok' : 'capacity-error'}`}>
                   HR: {job.hr_capacity ?? 0} / {job.final_shortlist_count} slots
-                </span>
+                  </span>
+                </div>
               </div>
-            </div>
+            </section>
 
-            <div className="card" style={{ gridColumn: '1 / -1' }}>
-              <h3 style={{ marginBottom: '1rem' }}>Job Description</h3>
-              <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: 1.7 }}>{job.description}</p>
-            </div>
+            <section className="card job-overview-card job-description-card">
+              <h3 className="job-overview-card-title"><span><FileText size={16} aria-hidden="true" /></span>Job Description</h3>
+              <p>{job.description}</p>
+            </section>
           </div>
         )}
 
@@ -704,7 +721,7 @@ export default function JobDetail() {
                   const isIncomplete = intv?.status === 'incomplete'
                   const isInProgress = intv?.status === 'in_progress'
                   const isScheduled = intv?.status === 'scheduled'
-                  const hasTranscript = aiResult?.transcript && aiResult.transcript.length > 0
+                  const hasTranscript = getTranscriptTurns(aiResult?.transcript).length > 0
 
                   return (
                     <div 
@@ -1396,12 +1413,31 @@ export default function JobDetail() {
               )}
 
               {/* Conversation Log */}
+              {!Array.isArray(selectedTranscriptApp.ai_interview?.ai_result?.transcript) && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                  <div className="card" style={{ padding: '0.85rem 1rem', flex: '1 1 150px' }}>
+                    <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase' }}>Total interview time</span>
+                    <strong>{formatDuration(selectedTranscriptApp.ai_interview?.ai_result?.transcript?.total_duration_seconds)}</strong>
+                  </div>
+                  <div className="card" style={{ padding: '0.85rem 1rem', flex: '1 1 150px' }}>
+                    <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase' }}>Candidate responses</span>
+                    <strong>{getTranscriptTurns(selectedTranscriptApp.ai_interview?.ai_result?.transcript).filter(turn => turn.speaker === 'user' || turn.speaker === 'candidate').length}</strong>
+                  </div>
+                  {selectedTranscriptApp.ai_interview?.ai_result?.transcript?.started_at && (
+                    <div className="card" style={{ padding: '0.85rem 1rem', flex: '1 1 220px' }}>
+                      <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase' }}>Session started</span>
+                      <strong>{formatDate(selectedTranscriptApp.ai_interview.ai_result.transcript.started_at)}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '0.5px' }}>
                 Spoken Dialogue Turns
               </h4>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                {selectedTranscriptApp.ai_interview?.ai_result?.transcript?.map((turn, i) => {
+                {getTranscriptTurns(selectedTranscriptApp.ai_interview?.ai_result?.transcript).map((turn, i) => {
                   const isUser = turn.speaker === 'user' || turn.speaker === 'candidate'
                   return (
                     <div 
@@ -1427,6 +1463,13 @@ export default function JobDetail() {
                       }}>
                         {turn.text}
                       </div>
+                      {(turn.time || (isUser && turn.response_duration_seconds !== undefined)) && (
+                        <span style={{ marginTop: '0.3rem', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+                          {isUser && turn.response_duration_seconds !== undefined && `Answer time: ${formatDuration(turn.response_duration_seconds)}`}
+                          {isUser && turn.response_duration_seconds !== undefined && turn.time && ' · '}
+                          {turn.time && new Date(turn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </span>
+                      )}
                     </div>
                   )
                 })}
@@ -1440,7 +1483,7 @@ export default function JobDetail() {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </>
   )
 }

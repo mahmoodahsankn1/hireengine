@@ -201,7 +201,7 @@ def _heuristic_score_cv(job_title: str, job_description: str, required_skills: l
         "education": edu_score,
         "total": total,
         "reason": reason,
-        "prompt_version": PROMPT_VERSION,
+        "prompt_version": INTERVIEW_PROMPT_VERSION,
         "model": "heuristic-evaluator-v1",
     }
 
@@ -211,10 +211,13 @@ def _heuristic_score_cv(job_title: str, job_description: str, required_skills: l
 # =====================================================================
 
 REALTIME_MODEL = getattr(settings, 'OPENAI_REALTIME_MODEL', 'gpt-realtime')
+INTERVIEW_PROMPT_VERSION = "v1.1"
 
 INTERVIEW_SCORER_SYSTEM_PROMPT = (
     "You are an expert technical interviewer evaluator. Evaluate the candidate's interview transcript "
     "for the specified role.\n"
+    "Use interviewer questions only to understand context. Score the candidate's responses, not the interviewer's words. "
+    "Use per-response and total duration as context, but never reward or penalize a candidate solely for speaking quickly or slowly.\n"
     "Rubric breakdown:\n"
     "- Technical (max 40 points): Technical competence, accurate concepts, correct principles.\n"
     "- Depth (max 25 points): Depth of understanding, ability to elaborate beyond surface-level answers.\n"
@@ -296,20 +299,59 @@ def mint_realtime_session(instructions: str) -> dict:
             "error": str(exc),
         }
 
-def score_interview(transcript: list | str, job_title: str, job_description: str, required_skills: list) -> dict:
+def _format_interview_turn(turn: dict) -> str:
+    is_candidate = turn.get('speaker') in ['user', 'candidate']
+    speaker = 'CANDIDATE RESPONSE' if is_candidate else 'INTERVIEWER'
+    duration = (
+        f" | speaking time: {turn.get('response_duration_seconds', 'unknown')} seconds"
+        if is_candidate else ""
+    )
+    timestamp = f" | at: {turn['time']}" if turn.get('time') else ""
+    return f"[{speaker}{duration}{timestamp}]: {turn.get('text', '')}"
+
+
+def score_interview(transcript: dict | list | str, job_title: str, job_description: str, required_skills: list) -> dict:
     """
     Evaluates an AI interview transcript against the job description and rubric.
     Rubric: Technical (40), Depth (25), Communication (20), Relevance (15). Total = 100.
     Stores prompt_version and model in output.
     """
-    if isinstance(transcript, list):
+    candidate_responses = []
+    if isinstance(transcript, dict):
+        turns = transcript.get('turns', [])
+        total_duration_seconds = transcript.get('total_duration_seconds')
         formatted_transcript = "\n".join(
-            f"[{turn.get('speaker', 'unknown').upper()}]: {turn.get('text', '')}"
+            _format_interview_turn(turn)
+            for turn in turns
+            if isinstance(turn, dict) and turn.get('text')
+        ) if isinstance(turns, list) else ""
+        candidate_responses = [
+            turn.get('text', '')
+            for turn in turns
+            if isinstance(turn, dict)
+            and turn.get('speaker') in ['user', 'candidate']
+            and turn.get('text')
+        ] if isinstance(turns, list) else []
+        if total_duration_seconds is not None:
+            formatted_transcript = (
+                f"Total interview duration: {total_duration_seconds} seconds\n" + formatted_transcript
+            )
+    elif isinstance(transcript, list):
+        formatted_transcript = "\n".join(
+            _format_interview_turn(turn)
             for turn in transcript
             if isinstance(turn, dict) and turn.get('text')
         )
+        candidate_responses = [
+            turn.get('text', '')
+            for turn in transcript
+            if isinstance(turn, dict)
+            and turn.get('speaker') in ['user', 'candidate']
+            and turn.get('text')
+        ]
     else:
         formatted_transcript = str(transcript)
+        candidate_responses = [formatted_transcript]
 
     skills_context = json.dumps(required_skills, indent=2) if isinstance(required_skills, list) else str(required_skills)
     user_prompt = (
@@ -351,13 +393,13 @@ def score_interview(transcript: list | str, job_title: str, job_description: str
                 },
                 "total": total,
                 "justification": justification,
-                "prompt_version": PROMPT_VERSION,
+                "prompt_version": INTERVIEW_PROMPT_VERSION,
                 "model": DEFAULT_OPENAI_MODEL,
             }
         except Exception as exc:
             logger.error(f"OpenAI interview scoring call failed: {exc}. Falling back to heuristic scorer.")
 
-    return _heuristic_score_interview(formatted_transcript, required_skills)
+    return _heuristic_score_interview("\n".join(candidate_responses), required_skills)
 
 def _heuristic_score_interview(transcript_text: str, required_skills: list) -> dict:
     """
@@ -410,4 +452,3 @@ def _heuristic_score_interview(transcript_text: str, required_skills: list) -> d
         "prompt_version": PROMPT_VERSION,
         "model": "heuristic-evaluator-v1",
     }
-

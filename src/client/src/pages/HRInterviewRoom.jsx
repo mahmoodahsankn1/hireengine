@@ -15,11 +15,10 @@ import {
   LiveKitRoom,
   VideoConference,
   RoomAudioRenderer,
-  useRoomContext,
 } from '@livekit/components-react'
 import '@livekit/components-styles'
 import api from '../services/api'
-import { Video, Mic, Clock, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react'
+import { Video, Clock, ShieldCheck, AlertTriangle } from 'lucide-react'
 
 function formatDate(dt) {
   if (!dt) return '—'
@@ -67,59 +66,26 @@ function WaitingRoom({ info, onJoin, joining, error: joinError }) {
   const isTerminal = ['completed', 'no_show', 'cancelled'].includes(info.status)
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg-base)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 'clamp(1rem, 3vw, 2rem)',
-    }}>
-      <div className="card" style={{
-        maxWidth: '520px',
-        width: '100%',
-        padding: 'clamp(1.25rem, 4vw, 2.5rem)',
-        textAlign: 'center',
-      }}>
-        {/* Icon */}
-        <div style={{
-          width: '72px', height: '72px', borderRadius: '50%',
-          background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 1.5rem',
-        }}>
-          <Video size={32} color="#fff" />
+    <main className="meeting-waiting-page">
+      <section className="meeting-waiting-card">
+        <div className="meeting-waiting-heading">
+          <div className="meeting-waiting-icon"><Video size={25} aria-hidden="true" /></div>
+          <span className="meeting-waiting-kicker">HIREENGINE · ROUND 3</span>
+          <h1>Live interview</h1>
+          <p className="meeting-waiting-role">{info.job_title}</p>
+          <p className="meeting-waiting-company">{info.company_name} <span aria-hidden="true">·</span> {info.candidate_name}</p>
         </div>
 
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.4rem' }}>
-          HR Video Interview
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          {info.job_title} · {info.company_name}
-        </p>
-
-        {/* Info grid */}
-        <div className="waiting-room-grid" style={{
-          background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)',
-          padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid var(--border-card)',
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', textAlign: 'left',
-        }}>
-          {[
-            ['Scheduled', formatDate(info.start_at)],
-            ['Duration', `${info.duration_minutes} minutes`],
-            ['Room opens', formatDate(info.join_opens_at)],
-            ['Status', info.status.replace('_', ' ')],
-          ].map(([k, v]) => (
-            <div key={k}>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.15rem' }}>{k}</div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 500, wordBreak: 'break-word' }}>{v}</div>
-            </div>
-          ))}
+        <div className="meeting-waiting-details">
+          <div><span>Scheduled for</span><strong>{formatDate(info.start_at)}</strong></div>
+          <div><span>Interview length</span><strong>{info.duration_minutes} minutes</strong></div>
+          <div><span>Room opens</span><strong>{formatDate(info.join_opens_at)}</strong></div>
+          <div><span>Session status</span><strong className={`meeting-waiting-status status-${info.status}`}>{info.status.replaceAll('_', ' ')}</strong></div>
         </div>
 
         {/* Status / CTA */}
         {isTerminal ? (
-          <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+          <div className="alert alert-error meeting-waiting-alert">
             <AlertTriangle size={18} />
             <span>
               {info.status === 'no_show' ? 'This interview was marked as no-show.' :
@@ -128,39 +94,27 @@ function WaitingRoom({ info, onJoin, joining, error: joinError }) {
             </span>
           </div>
         ) : info.is_expired ? (
-          <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+          <div className="alert alert-error meeting-waiting-alert">
             <AlertTriangle size={18} />
             <span>The join window has closed. Please contact your recruiter.</span>
           </div>
         ) : info.is_early ? (
-          <div style={{ marginBottom: '1rem' }}>
-            <div className="alert" style={{
-              marginBottom: '1rem', background: 'rgba(99,102,241,0.15)',
-              border: '1px solid rgba(99,102,241,0.35)', color: 'var(--text-primary)',
-            }}>
-              <Clock size={18} color="var(--color-primary-light)" />
-              <span>Room opens in <strong>{countdown}</strong></span>
-            </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              You may join up to {info.duration_minutes >= 30 ? '5' : '5'} minutes early. Please stay on this page.
-            </p>
+          <div className="meeting-waiting-countdown">
+            <div className="meeting-countdown-icon"><Clock size={19} /></div>
+            <div><span>The meeting room opens in</span><strong>{countdown}</strong></div>
+            <p>You can stay on this page. The join button will become available when the room opens.</p>
           </div>
         ) : (
           <>
             {joinError && (
-              <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+              <div className="alert alert-error meeting-waiting-alert">
                 <AlertTriangle size={16} />
                 <span>{joinError}</span>
               </div>
             )}
             <button
               id="join-meeting-btn"
-              className="btn btn-primary"
-              style={{
-                width: '100%', padding: '0.85rem',
-                background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                fontSize: '1rem', fontWeight: 600,
-              }}
+              className="btn btn-primary meeting-waiting-join"
               onClick={onJoin}
               disabled={joining}
             >
@@ -178,11 +132,13 @@ function WaitingRoom({ info, onJoin, joining, error: joinError }) {
           </>
         )}
 
-        <p style={{ marginTop: '1.5rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-          Please ensure you are in a quiet place with a working camera and microphone.
-        </p>
-      </div>
-    </div>
+        <div className="meeting-waiting-checklist">
+          <ShieldCheck size={18} aria-hidden="true" />
+          <p><strong>Before you join</strong><br />Choose a quiet place and allow camera and microphone access when prompted.</p>
+        </div>
+        <p className="meeting-waiting-footnote">Need to reschedule? Contact your recruiter using the invitation email.</p>
+      </section>
+    </main>
   )
 }
 

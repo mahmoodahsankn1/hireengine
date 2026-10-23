@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { 
-  Mic, MicOff, Volume2, Shield, Clock, AlertTriangle, 
-  CheckCircle, Sparkles, PhoneOff, Award, ChevronRight, FileText
+  Mic, Volume2, Shield, Clock, AlertTriangle,
+  CheckCircle, Sparkles, PhoneOff
 } from 'lucide-react'
 import api from '../services/api'
 
@@ -22,7 +22,7 @@ export default function AIInterviewRoom() {
 
   // Interview state
   const [secondsRemaining, setSecondsRemaining] = useState(300)
-  const [transcript, setTranscript] = useState([])
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [aiSpeaking, setAiSpeaking] = useState(false)
   const [userSpeaking, setUserSpeaking] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -39,11 +39,28 @@ export default function AIInterviewRoom() {
   const remoteAudioRef = useRef(null)
   const transcriptRef = useRef([])
   const timerIntervalRef = useRef(null)
+  const sessionStartedAtRef = useRef(null)
+  const candidateSpeechStartedAtRef = useRef(null)
+  const candidateSpeechDurationMsRef = useRef(0)
+  const manualInputStartedAtRef = useRef(null)
 
-  // Update transcriptRef whenever transcript state changes
-  useEffect(() => {
-    transcriptRef.current = transcript
-  }, [transcript])
+  function appendTranscriptTurn(turn) {
+    const updatedTranscript = [...transcriptRef.current, turn]
+    transcriptRef.current = updatedTranscript
+  }
+
+  function buildTranscriptPayload(turns = transcriptRef.current) {
+    const endedAt = new Date()
+    const startedAt = sessionStartedAtRef.current
+    return {
+      turns,
+      total_duration_seconds: startedAt
+        ? Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000))
+        : 0,
+      started_at: startedAt?.toISOString() || null,
+      ended_at: endedAt.toISOString(),
+    }
+  }
 
   // 1. Fetch Interview info
   useEffect(() => {
@@ -132,6 +149,11 @@ export default function AIInterviewRoom() {
 
   // 3. Start AI Interview Session
   async function startInterview() {
+    transcriptRef.current = []
+    sessionStartedAtRef.current = null
+    candidateSpeechStartedAtRef.current = null
+    candidateSpeechDurationMsRef.current = 0
+    manualInputStartedAtRef.current = null
     setViewState('in_interview')
     setIsSubmitting(false)
 
@@ -153,9 +175,11 @@ export default function AIInterviewRoom() {
 
       // Call Backend to mint Realtime session key
       const startRes = await api.post(`/ai-interview/${token}/start/`)
-      const { key, ends_at, duration_minutes, is_mock } = startRes.data
+      const { key, ends_at, is_mock, started_at } = startRes.data
 
       setIsMockMode(Boolean(is_mock))
+      sessionStartedAtRef.current = new Date(started_at || Date.now())
+      setElapsedSeconds(0)
 
       // Setup countdown timer based on server ends_at
       const endMs = new Date(ends_at).getTime()
@@ -164,6 +188,7 @@ export default function AIInterviewRoom() {
       setSecondsRemaining(remainingSecs)
 
       timerIntervalRef.current = setInterval(() => {
+        setElapsedSeconds(Math.floor((Date.now() - sessionStartedAtRef.current.getTime()) / 1000))
         setSecondsRemaining(prev => {
           if (prev <= 1) {
             clearInterval(timerIntervalRef.current)
@@ -177,8 +202,8 @@ export default function AIInterviewRoom() {
       // Setup pagehide beacon for safety
       const handlePageHide = () => {
         const beaconUrl = `${api.defaults.baseURL || '/api'}/ai-interview/${token}/finish/`
-        const payload = JSON.stringify({ transcript: transcriptRef.current })
-        navigator.sendBeacon(beaconUrl, payload)
+        const payload = JSON.stringify({ transcript: buildTranscriptPayload() })
+        navigator.sendBeacon(beaconUrl, new Blob([payload], { type: 'application/json' }))
       }
       window.addEventListener('pagehide', handlePageHide)
 
@@ -245,10 +270,18 @@ export default function AIInterviewRoom() {
           if (msg.type === 'conversation.item.input_audio_transcription.completed') {
             const userText = msg.transcript?.trim()
             if (userText) {
-              setTranscript(prev => [
-                ...prev,
-                { speaker: 'user', text: userText, time: new Date().toISOString() }
-              ])
+              if (candidateSpeechStartedAtRef.current !== null) {
+                candidateSpeechDurationMsRef.current += Date.now() - candidateSpeechStartedAtRef.current
+                candidateSpeechStartedAtRef.current = null
+              }
+              const responseDurationSeconds = Math.round(candidateSpeechDurationMsRef.current / 1000)
+              candidateSpeechDurationMsRef.current = 0
+              appendTranscriptTurn({
+                speaker: 'user',
+                text: userText,
+                time: new Date().toISOString(),
+                response_duration_seconds: responseDurationSeconds,
+              })
               setUserSpeaking(false)
             }
           }
@@ -261,18 +294,22 @@ export default function AIInterviewRoom() {
           ) {
             const aiText = (msg.transcript || msg.text || '')?.trim()
             if (aiText) {
-              setTranscript(prev => [
-                ...prev,
-                { speaker: 'assistant', text: aiText, time: new Date().toISOString() }
-              ])
+              appendTranscriptTurn({ speaker: 'assistant', text: aiText, time: new Date().toISOString() })
               setAiSpeaking(false)
             }
           }
 
           if (msg.type === 'input_audio_buffer.speech_started') {
+            if (candidateSpeechStartedAtRef.current === null) {
+              candidateSpeechStartedAtRef.current = Date.now()
+            }
             setUserSpeaking(true)
           }
           if (msg.type === 'input_audio_buffer.speech_stopped') {
+            if (candidateSpeechStartedAtRef.current !== null) {
+              candidateSpeechDurationMsRef.current += Date.now() - candidateSpeechStartedAtRef.current
+              candidateSpeechStartedAtRef.current = null
+            }
             setUserSpeaking(false)
           }
         } catch (e) {
@@ -318,7 +355,7 @@ export default function AIInterviewRoom() {
       text: `Hello ${interviewInfo?.candidate_name || 'Candidate'}! Welcome to your technical interview for ${interviewInfo?.job_title || 'the position'}. Could you briefly describe your technical background and experience with the core skills listed for this role?`,
       time: new Date().toISOString()
     }
-    setTranscript([welcomeTurn])
+    transcriptRef.current = [welcomeTurn]
 
     // Speak welcome using browser speech if available
     speakText(welcomeTurn.text)
@@ -343,10 +380,14 @@ export default function AIInterviewRoom() {
     const userTurn = {
       speaker: 'user',
       text: manualInput.trim(),
-      time: new Date().toISOString()
+      time: new Date().toISOString(),
+      response_duration_seconds: manualInputStartedAtRef.current
+        ? Math.round((Date.now() - manualInputStartedAtRef.current) / 1000)
+        : 0,
     }
-    setTranscript(prev => [...prev, userTurn])
+    appendTranscriptTurn(userTurn)
     setManualInput('')
+    manualInputStartedAtRef.current = null
 
     // Generate responsive follow-up turn in mock mode
     setTimeout(() => {
@@ -361,7 +402,7 @@ export default function AIInterviewRoom() {
         text: nextQ,
         time: new Date().toISOString()
       }
-      setTranscript(prev => [...prev, aiTurn])
+      appendTranscriptTurn(aiTurn)
       speakText(nextQ)
     }, 1200)
   }
@@ -381,7 +422,7 @@ export default function AIInterviewRoom() {
 
     try {
       await api.post(`/ai-interview/${token}/finish/`, {
-        transcript: currentTranscript
+        transcript: buildTranscriptPayload(currentTranscript)
       })
       setViewState('completed')
     } catch (err) {
@@ -395,6 +436,9 @@ export default function AIInterviewRoom() {
   const mins = Math.floor(secondsRemaining / 60)
   const secs = secondsRemaining % 60
   const formattedTime = `${mins}:${secs < 10 ? '0' : ''}${secs}`
+  const elapsedMins = Math.floor(elapsedSeconds / 60)
+  const elapsedRemainder = elapsedSeconds % 60
+  const formattedElapsed = `${elapsedMins}:${elapsedRemainder < 10 ? '0' : ''}${elapsedRemainder}`
 
   // Render Waiting Room
   if (viewState === 'waiting') {
@@ -551,222 +595,114 @@ export default function AIInterviewRoom() {
 
   // Render Active Interview Room
   if (viewState === 'in_interview') {
+    const totalSeconds = (interviewInfo?.duration_minutes || 5) * 60
+    const elapsedPercent = Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100))
+
     return (
-      <div className="page" style={{ maxWidth: '860px', margin: '0 auto', paddingTop: '1.5rem' }}>
-        {/* Remote Audio Element */}
+      <main className="ai-room-page">
         <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
 
-        {/* Audio blocked notification on mobile browsers */}
+        <header className="ai-room-header">
+          <div>
+            <span className="ai-room-eyebrow">AI INTERVIEW SESSION</span>
+            <h1>{interviewInfo?.job_title}</h1>
+            <p>{interviewInfo?.company_name} <span aria-hidden="true">·</span> {interviewInfo?.candidate_name}</p>
+          </div>
+          <div className="ai-room-live-badge"><span /> Session in progress</div>
+        </header>
+
         {audioBlocked && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid var(--color-danger)',
-            borderRadius: 'var(--radius-md)',
-            padding: '0.75rem 1rem',
-            marginBottom: '1rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '0.5rem',
-            flexWrap: 'wrap'
-          }}>
-            <div style={{ fontSize: '0.875rem', color: 'var(--color-danger)', fontWeight: 600 }}>
-              🔇 Audio playback was blocked by your browser's autoplay policy.
-            </div>
-            <button 
+          <div className="ai-room-audio-alert" role="alert">
+            <p>Audio playback was blocked by your browser. Enable audio to hear the interviewer.</p>
+            <button
               onClick={() => {
                 if (remoteAudioRef.current) {
                   remoteAudioRef.current.play().then(() => setAudioBlocked(false)).catch(e => console.warn(e))
                 }
               }}
               className="btn btn-primary"
-              style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
             >
-              🔊 Tap to Enable Audio
+              <Volume2 size={16} /> Enable audio
             </button>
           </div>
         )}
 
-        {/* Top Control Bar */}
-        <div className="card" style={{ 
-          padding: '1rem 1.5rem', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: '1.25rem',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Position</span>
-            <div style={{ fontWeight: 700, fontSize: '1rem' }}>{interviewInfo?.job_title}</div>
+        <section className="ai-room-stage" aria-label="Live interview controls">
+          <div className="ai-room-stage-meta">
+            <span><Sparkles size={15} /> HireEngine AI interviewer</span>
+            {isMockMode && <span className="ai-room-mode">Text fallback</span>}
           </div>
 
-          {/* Countdown Clock */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.5rem',
-            padding: '0.4rem 1rem',
-            borderRadius: 'var(--radius-md)',
-            background: secondsRemaining < 60 ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-surface)',
-            border: secondsRemaining < 60 ? '1px solid var(--color-danger)' : '1px solid var(--border-subtle)',
-            color: secondsRemaining < 60 ? 'var(--color-danger)' : 'var(--text-primary)'
-          }}>
-            <Clock size={18} />
-            <span style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'monospace' }}>
-              {formattedTime}
-            </span>
+          <div className={`ai-room-orb ${aiSpeaking ? 'is-speaking' : ''} ${userSpeaking ? 'is-listening' : ''}`}>
+            <div className="ai-room-orb-core"><Volume2 size={36} aria-hidden="true" /></div>
           </div>
+          <h2>AI Technical Interview</h2>
+          <p className="ai-room-speaking-state" aria-live="polite">
+            {aiSpeaking ? 'Interviewer is speaking' : userSpeaking ? 'Listening to your answer' : 'Ready when you are'}
+          </p>
+          <div className={`ai-room-waveform ${aiSpeaking || userSpeaking ? 'is-active' : ''}`} aria-hidden="true">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => <span key={i} />)}
+          </div>
+          <p className="ai-room-prompt">
+            Speak naturally and take a moment to explain your approach. Your answers are captured for the hiring team and AI evaluation.
+          </p>
 
-          {/* End Button */}
-          <button 
+          <div className="ai-room-timing">
+            <div className="ai-room-time-stat">
+              <span>Elapsed</span>
+              <strong><Clock size={16} /> {formattedElapsed}</strong>
+            </div>
+            <div className="ai-room-progress" role="progressbar" aria-label="Interview time elapsed" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(elapsedPercent)}>
+              <span style={{ width: `${elapsedPercent}%` }} />
+            </div>
+            <div className={`ai-room-time-stat ai-room-time-remaining ${secondsRemaining < 60 ? 'is-ending' : ''}`}>
+              <span>Time remaining</span>
+              <strong><Clock size={16} /> {formattedTime}</strong>
+            </div>
+          </div>
+        </section>
+
+        <div className="ai-room-privacy-note">
+          <Shield size={18} aria-hidden="true" />
+          <p><strong>Private interview session</strong><br />Live transcript is hidden from this screen and securely submitted for evaluation when you finish.</p>
+        </div>
+
+        {isMockMode && (
+          <form className="ai-room-fallback" onSubmit={e => { e.preventDefault(); handleSendManualTurn() }}>
+            <label htmlFor="ai-room-response">Text response (audio interview is unavailable)</label>
+            <div>
+              <input
+                id="ai-room-response"
+                type="text"
+                className="input"
+                placeholder="Type your response..."
+                value={manualInput}
+                onChange={e => {
+                  if (!e.target.value) {
+                    manualInputStartedAtRef.current = null
+                  } else if (manualInputStartedAtRef.current === null) {
+                    manualInputStartedAtRef.current = Date.now()
+                  }
+                  setManualInput(e.target.value)
+                }}
+              />
+              <button className="btn btn-primary" type="submit" disabled={!manualInput.trim()}>Send response</button>
+            </div>
+          </form>
+        )}
+
+        <footer className="ai-room-footer">
+          <span><Shield size={14} /> Securely recorded for this interview</span>
+          <button
             id="end-ai-interview-btn"
-            className="btn" 
-            style={{ background: 'var(--color-danger)', color: '#fff', fontSize: '0.85rem' }}
+            className="btn ai-room-end-button"
             disabled={isSubmitting}
             onClick={handleFinishInterview}
           >
-            <PhoneOff size={16} /> End Interview
+            <PhoneOff size={16} /> {isSubmitting ? 'Submitting...' : 'End interview'}
           </button>
-        </div>
-
-        {/* Live Visualizer Avatar Card */}
-        <div className="card" style={{ 
-          padding: '2.5rem 1.5rem', 
-          textAlign: 'center', 
-          background: 'radial-gradient(circle at center, rgba(99,102,241,0.12) 0%, var(--bg-card) 70%)',
-          marginBottom: '1.25rem',
-          position: 'relative'
-        }}>
-          {isMockMode && (
-            <span className="badge badge-warning" style={{ position: 'absolute', top: '1rem', right: '1rem', fontSize: '0.75rem' }}>
-              Interactive Fallback Mode Active
-            </span>
-          )}
-
-          {/* AI Pulsing Orb */}
-          <div style={{ 
-            width: '100px', 
-            height: '100px', 
-            borderRadius: '50%', 
-            margin: '0 auto 1.25rem',
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: 'var(--shadow-glow)',
-            transform: aiSpeaking ? 'scale(1.08)' : 'scale(1.0)',
-            transition: 'transform 0.3s ease'
-          }} className={aiSpeaking ? 'ai-avatar-pulse' : ''}>
-            <Volume2 size={40} color="#fff" />
-          </div>
-
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '0.25rem' }}>
-            HireEngine AI Technical Interviewer
-          </h3>
-          <p style={{ fontSize: '0.85rem', color: aiSpeaking ? 'var(--color-accent)' : userSpeaking ? 'var(--color-success)' : 'var(--text-muted)' }}>
-            {aiSpeaking ? 'Speaking...' : userSpeaking ? 'Listening to you...' : 'Listening... Speak naturally.'}
-          </p>
-
-          {/* Audio Activity Bars */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginTop: '1rem', height: '28px', alignItems: 'center' }}>
-            {[1, 2, 3, 4, 5, 6, 7].map(i => (
-              <span 
-                key={i} 
-                style={{ 
-                  width: '4px', 
-                  height: (aiSpeaking || userSpeaking) ? `${10 + (i % 3) * 8}px` : '4px', 
-                  background: (aiSpeaking || userSpeaking) ? 'var(--color-accent)' : 'var(--text-muted)',
-                  borderRadius: '2px',
-                  transition: 'height 0.2s ease'
-                }} 
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Live Conversation Transcript Display */}
-        <div className="card" style={{ padding: '1.5rem', maxHeight: '360px', overflowY: 'auto' }}>
-          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '1rem', letterSpacing: '0.5px' }}>
-            Live Conversation Transcript
-          </h4>
-
-          {transcript.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0', fontSize: '0.9rem' }}>
-              Starting session... The AI interviewer will greet you momentarily.
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {transcript.map((turn, idx) => {
-                const isUser = turn.speaker === 'user' || turn.speaker === 'candidate'
-                return (
-                  <div 
-                    key={idx} 
-                    style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column',
-                      alignItems: isUser ? 'flex-end' : 'flex-start'
-                    }}
-                  >
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
-                      {isUser ? 'You (Candidate)' : 'AI Interviewer'}
-                    </span>
-                    <div style={{ 
-                      maxWidth: '80%', 
-                      padding: '0.75rem 1rem', 
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '0.9rem',
-                      background: isUser ? 'var(--color-primary)' : 'var(--bg-surface)',
-                      color: '#fff',
-                      border: isUser ? 'none' : '1px solid var(--border-subtle)',
-                      lineHeight: 1.5
-                    }}>
-                      {turn.text}
-                      {!isUser && isMockMode && (
-                        <div style={{ marginTop: '0.4rem' }}>
-                          <button 
-                            type="button"
-                            onClick={() => speakText(turn.text)}
-                            style={{
-                              background: 'rgba(255, 255, 255, 0.08)',
-                              border: '1px solid var(--border-subtle)',
-                              borderRadius: '4px',
-                              color: 'var(--color-accent)',
-                              fontSize: '0.75rem',
-                              padding: '0.2rem 0.5rem',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            🔊 Play Audio
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Fallback interactive input bar if speech/text fallback is active */}
-          {isMockMode && (
-            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-card)', display: 'flex', gap: '0.5rem' }}>
-              <input 
-                type="text" 
-                className="input" 
-                placeholder="Type your response or speak into your microphone..."
-                value={manualInput}
-                onChange={e => setManualInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSendManualTurn()}
-              />
-              <button className="btn btn-primary" onClick={handleSendManualTurn}>
-                Send
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+        </footer>
+      </main>
     )
   }
 

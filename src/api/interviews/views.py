@@ -215,6 +215,7 @@ class AIInterviewStartView(APIView):
             "key": key,
             "client_secret": key,
             "ends_at": ends_at.isoformat(),
+            "started_at": started_at.isoformat(),
             "duration_minutes": interview.duration_minutes,
             "status": interview.status,
             "is_mock": is_mock,
@@ -265,22 +266,49 @@ class AIInterviewFinishView(APIView):
             except Exception:
                 raw_data = {}
 
-        transcript = raw_data.get('transcript', [])
-        if isinstance(transcript, str):
+        transcript_payload = raw_data.get('transcript', [])
+        if isinstance(transcript_payload, str):
             try:
-                transcript = json.loads(transcript)
+                transcript_payload = json.loads(transcript_payload)
             except Exception:
-                transcript = [{"speaker": "candidate", "text": transcript, "time": timezone.now().isoformat()}]
+                transcript_payload = [{"speaker": "candidate", "text": transcript_payload, "time": timezone.now().isoformat()}]
+
+        if isinstance(transcript_payload, dict):
+            transcript_turns = transcript_payload.get('turns', [])
+        else:
+            transcript_turns = transcript_payload
 
         # Check whether transcript has meaningful content
         has_content = False
-        if isinstance(transcript, list) and len(transcript) > 0:
-            for turn in transcript:
-                if isinstance(turn, dict) and turn.get('text', '').strip():
+        if isinstance(transcript_turns, list) and len(transcript_turns) > 0:
+            for turn in transcript_turns:
+                if (
+                    isinstance(turn, dict)
+                    and turn.get('speaker') in ['user', 'candidate']
+                    and isinstance(turn.get('text'), str)
+                    and turn['text'].strip()
+                ):
                     has_content = True
                     break
 
         now = timezone.now()
+        total_duration_seconds = max(
+            0,
+            int((now - interview.started_at).total_seconds())
+        ) if interview.started_at else 0
+        transcript = {
+            'turns': transcript_turns if isinstance(transcript_turns, list) else [],
+            'total_duration_seconds': total_duration_seconds,
+            'started_at': interview.started_at.isoformat() if interview.started_at else None,
+            'ended_at': now.isoformat(),
+            'candidate_response_count': sum(
+                1 for turn in transcript_turns
+                if isinstance(turn, dict)
+                and turn.get('speaker') in ['user', 'candidate']
+                and isinstance(turn.get('text'), str)
+                and turn['text'].strip()
+            ) if isinstance(transcript_turns, list) else 0,
+        }
 
         if has_content:
             interview.status = 'completed'
@@ -359,13 +387,22 @@ class HRInterviewDetailView(APIView):
             "id": str(interview.id),
             "kind": interview.kind,
             "status": interview.status,
+            "job_title": interview.job.title,
+            "company_name": interview.hr.company_name,
             "start_at": interview.start_at,
+            "join_opens_at": interview.join_opens_at,
+            "reserved_until": interview.reserved_until,
             "duration_minutes": interview.duration_minutes,
             "started_at": interview.started_at,
             "ended_at": interview.ended_at,
             "application_id": str(interview.application.id),
             "candidate_name": interview.application.full_name,
             "candidate_email": interview.application.email,
+            "feedback": {
+                "rating": interview.feedback.rating,
+                "notes": interview.feedback.notes,
+                "decision": interview.feedback.decision,
+            } if hasattr(interview, 'feedback') else None,
             "ai_result": ai_res_data,
         }, status=status.HTTP_200_OK)
 
@@ -602,16 +639,15 @@ class HRInterviewFeedbackView(APIView):
             )
 
         rating = request.data.get('rating')
-        if rating is not None:
-            try:
-                rating = int(rating)
-                if not (1 <= rating <= 10):
-                    raise ValueError
-            except (TypeError, ValueError):
-                return Response(
-                    {"error": "rating must be an integer from 1 to 10."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        try:
+            rating = int(rating)
+            if not (1 <= rating <= 10):
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {"error": "rating must be an integer from 1 to 10."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         notes = request.data.get('notes', '')
 
