@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
 import { BrandLogo } from '../components/common/BrandLogo'
 
 export default function Register() {
   const navigate = useNavigate()
-  const { login } = useAuth()
 
   const [form, setForm] = useState({
     full_name: '', company_name: '', email: '', password: '',
@@ -48,7 +46,7 @@ export default function Register() {
   }
 
   return (
-    <div className="auth-wrapper">
+    <main className="auth-wrapper" id="main-content">
       <div className="auth-card">
         <div className="auth-logo">
           <BrandLogo className="auth-brand-logo" />
@@ -57,41 +55,47 @@ export default function Register() {
         </div>
 
         {serverError && (
-          <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{serverError}</div>
+          <div className="alert alert-error" role="alert" style={{ marginBottom: '1rem' }}>{serverError}</div>
         )}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="job-form-grid">
             <div className="form-group">
-              <label className="form-label">Full Name *</label>
+              <label className="form-label" htmlFor="reg-full-name">Full Name *</label>
               <input id="reg-full-name" name="full_name" type="text" className={`form-input ${errors.full_name ? 'error' : ''}`}
-                placeholder="Jane Doe" value={form.full_name} onChange={handleChange} required />
-              {errors.full_name && <span className="form-error">{errors.full_name}</span>}
+                placeholder="Your full name" autoComplete="name" value={form.full_name} onChange={handleChange} required
+                aria-invalid={Boolean(errors.full_name)} aria-describedby={errors.full_name ? 'reg-full-name-error' : undefined} />
+              {errors.full_name && <span className="form-error" id="reg-full-name-error">{errors.full_name}</span>}
             </div>
             <div className="form-group">
-              <label className="form-label">Company Name *</label>
+              <label className="form-label" htmlFor="reg-company-name">Company Name *</label>
               <input id="reg-company-name" name="company_name" type="text" className={`form-input ${errors.company_name ? 'error' : ''}`}
-                placeholder="Acme Corp" value={form.company_name} onChange={handleChange} required />
-              {errors.company_name && <span className="form-error">{errors.company_name}</span>}
+                placeholder="Company name" autoComplete="organization" value={form.company_name} onChange={handleChange} required
+                aria-invalid={Boolean(errors.company_name)} aria-describedby={errors.company_name ? 'reg-company-name-error' : undefined} />
+              {errors.company_name && <span className="form-error" id="reg-company-name-error">{errors.company_name}</span>}
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Work Email *</label>
+            <label className="form-label" htmlFor="reg-email">Work Email *</label>
             <input id="reg-email" name="email" type="email" className={`form-input ${errors.email ? 'error' : ''}`}
-              placeholder="you@company.com" value={form.email} onChange={handleChange} required />
-            {errors.email && <span className="form-error">{errors.email}</span>}
+              placeholder="you@company.com" autoComplete="email" spellCheck={false}
+              value={form.email} onChange={handleChange} required
+              aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'reg-email-error' : undefined} />
+            {errors.email && <span className="form-error" id="reg-email-error">{errors.email}</span>}
           </div>
 
           <div className="form-group">
-            <label className="form-label">Password *</label>
+            <label className="form-label" htmlFor="reg-password">Password *</label>
             <input id="reg-password" name="password" type="password" className={`form-input ${errors.password ? 'error' : ''}`}
-              placeholder="At least 8 characters" value={form.password} onChange={handleChange} required />
-            {errors.password && <span className="form-error">{errors.password}</span>}
+              placeholder="At least 8 characters" autoComplete="new-password"
+              value={form.password} onChange={handleChange} required
+              aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'reg-password-error' : undefined} />
+            {errors.password && <span className="form-error" id="reg-password-error">{errors.password}</span>}
           </div>
 
           <div className="form-group">
-            <label className="form-label">Company Description</label>
+            <label className="form-label" htmlFor="reg-company-desc">Company Description</label>
             <textarea id="reg-company-desc" name="company_description" className="form-textarea"
               placeholder="A short description of what your company does…" value={form.company_description}
               onChange={handleChange} rows={2} />
@@ -99,12 +103,12 @@ export default function Register() {
 
           <div className="job-form-grid">
             <div className="form-group">
-              <label className="form-label">Office Address</label>
+              <label className="form-label" htmlFor="reg-address">Office Address</label>
               <input id="reg-address" name="address" type="text" className="form-input"
                 placeholder="City, Country" value={form.address} onChange={handleChange} />
             </div>
             <div className="form-group">
-              <label className="form-label">Timezone</label>
+              <label className="form-label" htmlFor="reg-tz">Timezone</label>
               <select id="reg-tz" name="tz" className="form-select" value={form.tz} onChange={handleChange}>
                 <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
                 <option value="UTC">UTC</option>
@@ -125,6 +129,6 @@ export default function Register() {
           Already have an account? <Link to="/login">Sign in</Link>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

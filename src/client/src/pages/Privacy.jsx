@@ -1,14 +1,14 @@
-import { Link } from 'react-router-dom'
 import { Shield, Lock, Eye, Clock, UserCheck, ArrowLeft } from 'lucide-react'
 
 export default function Privacy() {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '2rem 1rem' }}>
+    <main id="main-content" style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '2rem 1rem' }}>
       <div className="container" style={{ maxWidth: '800px', margin: '0 auto' }}>
         
         {/* Navigation header */}
         <div style={{ marginBottom: '2rem' }}>
           <button 
+            type="button"
             onClick={() => window.history.back()} 
             className="btn btn-secondary" 
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}
@@ -16,8 +16,8 @@ export default function Privacy() {
             <ArrowLeft size={16} /> Back
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <span style={{ 
-              background: 'rgba(99,102,241,0.15)', 
+            <span style={{
+              background: 'rgba(0,122,80,0.12)',
               color: 'var(--color-primary-light)', 
               padding: '0.35rem 0.75rem', 
               borderRadius: '999px', 
@@ -45,7 +45,7 @@ export default function Privacy() {
           
           <div className="card" style={{ padding: '1.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ padding: '0.5rem', background: 'rgba(99,102,241,0.15)', borderRadius: 'var(--radius-md)', color: 'var(--color-primary-light)' }}>
+              <div style={{ padding: '0.5rem', background: 'rgba(0,122,80,0.12)', borderRadius: 'var(--radius-md)', color: 'var(--color-primary-light)' }}>
                 <Eye size={20} />
               </div>
               <h2 style={{ fontSize: '1.25rem' }}>1. Information We Collect</h2>
@@ -59,13 +59,13 @@ export default function Privacy() {
               <li><strong>Technical Logs:</strong> Application submission timestamps and status logs.</li>
             </ul>
             <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 'var(--radius-md)', fontSize: '0.875rem', color: 'var(--color-success)' }}>
-              🔒 <strong>Media Privacy Guarantee:</strong> We do NOT record, capture, or store candidate video or audio streams. Video interviews are conducted over peer-to-peer WebRTC connections.
+              <strong>Media privacy:</strong> Candidate video and audio streams are not recorded or stored. Video interviews use peer-to-peer WebRTC connections.
             </div>
           </div>
 
           <div className="card" style={{ padding: '1.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ padding: '0.5rem', background: 'rgba(6,182,212,0.15)', borderRadius: 'var(--radius-md)', color: 'var(--color-accent)' }}>
+              <div style={{ padding: '0.5rem', background: 'rgba(0,122,80,0.12)', borderRadius: 'var(--radius-md)', color: 'var(--mint-ink)' }}>
                 <Lock size={20} />
               </div>
               <h2 style={{ fontSize: '1.25rem' }}>2. AI Redaction & Blind Screening</h2>
@@ -96,7 +96,7 @@ export default function Privacy() {
 
           <div className="card" style={{ padding: '1.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ padding: '0.5rem', background: 'rgba(99,102,241,0.15)', borderRadius: 'var(--radius-md)', color: 'var(--color-primary-light)' }}>
+              <div style={{ padding: '0.5rem', background: 'rgba(0,122,80,0.12)', borderRadius: 'var(--radius-md)', color: 'var(--color-primary-light)' }}>
                 <Clock size={20} />
               </div>
               <h2 style={{ fontSize: '1.25rem' }}>4. Data Retention & Deletion</h2>
@@ -117,6 +117,6 @@ export default function Privacy() {
         </div>
 
       </div>
-    </div>
+    </main>
   )
 }

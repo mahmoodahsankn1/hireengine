@@ -193,7 +193,7 @@ export default function Apply() {
         <Link to="/" className="apply-brand" aria-label="HireEngine home"><BrandLogo /></Link>
         <Link to="/privacy" className="apply-privacy-link">Privacy &amp; data protection <ArrowRight size={14} aria-hidden="true" /></Link>
       </header>
-      <main className="apply-shell">
+      <main className="apply-shell" id="main-content">
         
         {/* Company and Job Header */}
         <div className="card apply-job-card">
@@ -270,16 +270,14 @@ export default function Apply() {
           /* Application Form Card */
           <section className="card apply-form-card">
             <div className="apply-form-heading">
-              <span className="apply-form-heading-icon"><FileText size={19} aria-hidden="true" /></span>
               <div>
-                <span className="apply-form-eyebrow">Your next opportunity</span>
                 <h2>Submit Your Application</h2>
                 <p>Share your details and resume to be considered for this role.</p>
               </div>
             </div>
 
             {errorMsg && (
-              <div className="alert alert-error apply-error" role="alert">
+              <div className="alert alert-error apply-error" role="alert" aria-live="polite">
                 <AlertCircle size={18} />
                 <span>{errorMsg}</span>
               </div>
@@ -293,7 +291,7 @@ export default function Apply() {
                   id="fullName" 
                   type="text" 
                   className="form-input"
-                  placeholder="e.g. John Doe"
+                  placeholder="Your full name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   autoComplete="name"
@@ -308,7 +306,7 @@ export default function Apply() {
                     id="email" 
                     type="email" 
                     className="form-input"
-                    placeholder="john@example.com"
+                    placeholder="you@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"

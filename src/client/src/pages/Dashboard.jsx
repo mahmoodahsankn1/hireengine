@@ -2,13 +2,10 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
-  AlertTriangle,
   ArrowRight,
-  BriefcaseBusiness,
   CalendarDays,
   CalendarPlus,
   Clock3,
-  FileText,
   MapPin,
   Pencil,
   Plus,
@@ -18,7 +15,6 @@ import {
 import api from '../services/api'
 import Navbar from '../components/Navbar'
 import { StatusBadge } from '../components/common/StatusBadge'
-import { useAuth } from '../context/AuthContext'
 
 const STAGE_LABELS = {
   draft: 'Draft',
@@ -32,10 +28,10 @@ const STAGE_LABELS = {
 }
 
 const STATS = [
-  { key: 'active_jobs', label: 'Active Jobs', icon: BriefcaseBusiness, tone: 'blue', note: 'Open roles' },
-  { key: 'total_applications', label: 'Total Applications', icon: FileText, tone: 'cyan', note: 'Across all roles' },
-  { key: 'cvs_needing_attention', label: 'CVs Needing Attention', icon: AlertTriangle, tone: 'orange', note: 'Require review' },
-  { key: 'upcoming_interviews', label: 'Upcoming Interviews', icon: CalendarDays, tone: 'violet', note: 'Scheduled ahead' },
+  { key: 'active_jobs', label: 'Active roles', note: 'Open to applications' },
+  { key: 'total_applications', label: 'Applications', note: 'Across your roles' },
+  { key: 'cvs_needing_attention', label: 'CVs to review', note: 'Waiting for your review' },
+  { key: 'upcoming_interviews', label: 'Upcoming interviews', note: 'On your calendar' },
 ]
 
 function formatDate(dt) {
@@ -49,7 +45,6 @@ function formatEmploymentType(value) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState('all')
 
@@ -96,7 +91,7 @@ export default function Dashboard() {
   if (error && !data) return (
     <>
       <Navbar className="dashboard-navbar" />
-      <main className="dashboard-page">
+      <main className="dashboard-page" id="main-content">
         <div className="dashboard-error dashboard-error-block" role="alert">
           <span>We couldn’t load your dashboard. Please check your connection and try again.</span>
           <button type="button" onClick={() => refetch()}>Try again</button>
@@ -117,18 +112,15 @@ export default function Dashboard() {
   return (
     <>
       <Navbar className="dashboard-navbar" />
-      <main className="dashboard-page">
-        <section className="dashboard-welcome">
+      <main className="dashboard-page" id="main-content">
+        <section className="dashboard-welcome" aria-labelledby="dashboard-title">
           <div className="dashboard-welcome-copy">
-            <span className="dashboard-eyebrow">HR Dashboard</span>
-            <h1>Welcome back, <span>{user?.full_name?.split(' ')[0] || 'there'}</span> <span aria-hidden="true">👋</span></h1>
-            <p>Manage your jobs, track applications, and find the right talent with Hire Engine.</p>
+            <h1 id="dashboard-title">Hiring dashboard</h1>
+            <p>Keep roles, applications, and interviews moving from one place.</p>
           </div>
           <Link to="/jobs/new" className="dashboard-create-job">
             <Plus size={18} aria-hidden="true" /> Post New Job
           </Link>
-          <div className="dashboard-welcome-orb dashboard-welcome-orb-one" aria-hidden="true" />
-          <div className="dashboard-welcome-orb dashboard-welcome-orb-two" aria-hidden="true" />
         </section>
 
         {error && (
@@ -139,16 +131,19 @@ export default function Dashboard() {
         )}
 
         <section className="dashboard-stats" aria-label="Hiring overview">
-          {STATS.map(({ key, label, icon: Icon, tone, note }) => {
+          {STATS.map(({ key, label, note }) => {
             const value = stats[key] ?? 0
             return (
               <article className="dashboard-stat-card" key={key}>
-                <span className={`dashboard-stat-icon tone-${tone}`}><Icon size={21} aria-hidden="true" /></span>
                 <div className="dashboard-stat-content">
                   <span className="dashboard-stat-label">{label}</span>
                   <strong className="dashboard-stat-value">{value}</strong>
                   <span className={`dashboard-stat-note ${value > 0 && (key === 'cvs_needing_attention' || key === 'upcoming_interviews') ? 'note-attention' : ''}`}>
-                    {value > 0 ? `${value} ${note.toLowerCase()}` : key === 'cvs_needing_attention' ? 'No pending reviews' : key === 'upcoming_interviews' ? 'No interviews scheduled' : note}
+                    {value === 0 && key === 'cvs_needing_attention'
+                      ? 'Nothing waiting'
+                      : value === 0 && key === 'upcoming_interviews'
+                        ? 'Nothing scheduled'
+                        : note}
                   </span>
                 </div>
               </article>
@@ -169,7 +164,7 @@ export default function Dashboard() {
                   type="search"
                   value={search}
                   onChange={event => setSearch(event.target.value)}
-                  placeholder="Search jobs..."
+                  placeholder="Search jobs…"
                   aria-label="Search jobs by title or location"
                 />
               </label>
@@ -187,7 +182,6 @@ export default function Dashboard() {
 
           {jobs.length === 0 ? (
             <div className="dashboard-empty">
-              <span className="dashboard-empty-icon"><BriefcaseBusiness size={25} aria-hidden="true" /></span>
               <h3>No jobs yet</h3>
               <p>Create your first job posting to start hiring.</p>
               <Link to="/jobs/new" className="dashboard-empty-link">Post a Job <ArrowRight size={16} /></Link>

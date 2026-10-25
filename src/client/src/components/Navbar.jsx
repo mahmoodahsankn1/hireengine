@@ -1,10 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { BrandLogo } from './common/BrandLogo'
 
 export default function Navbar({ className = '' }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   function handleLogout() {
     logout()
@@ -16,29 +17,42 @@ export default function Navbar({ className = '' }) {
     : 'HR'
 
   return (
-    <nav className={`navbar ${className}`.trim()}>
+    <header className={`navbar ${className}`.trim()}>
       <div className="navbar-inner">
         <Link to="/dashboard" className="navbar-brand" aria-label="HireEngine HR dashboard">
           <BrandLogo className="navbar-brand-content" />
         </Link>
 
+        <nav className="navbar-links" aria-label="Workspace navigation">
+          <NavLink to="/dashboard" end className={({ isActive }) => isActive ? 'active' : ''}>
+            Dashboard
+          </NavLink>
+          <Link
+            to="/jobs/new"
+            className={location.pathname.startsWith('/jobs/') && location.pathname.endsWith('/edit') ? 'active' : ''}
+            aria-current={location.pathname === '/jobs/new' || location.pathname.endsWith('/edit') ? 'page' : undefined}
+          >
+            Post a job
+          </Link>
+        </nav>
+
         <div className="navbar-spacer" />
 
         {user && (
           <div className="navbar-user">
-            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.3 }}>
-              <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.85rem' }}>
-                {user.full_name}
-              </span>
-              <span style={{ fontSize: '0.75rem' }}>{user.company_name}</span>
-            </span>
-            <div className="navbar-avatar">{initials}</div>
-            <button className="btn btn-ghost" onClick={handleLogout} style={{ marginLeft: '0.25rem' }}>
-              Logout
+            <div className="navbar-user-details">
+              <span>{user.full_name}</span>
+              <span>{user.company_name}</span>
+            </div>
+            <div className="navbar-avatar" aria-label={`${user.full_name || 'User'} account`}>
+              {initials}
+            </div>
+            <button type="button" className="btn btn-ghost" onClick={handleLogout}>
+              Sign out
             </button>
           </div>
         )}
       </div>
-    </nav>
+    </header>
   )
 }

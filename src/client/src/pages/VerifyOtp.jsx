@@ -97,7 +97,7 @@ export default function VerifyOtp() {
   }
 
   return (
-    <div className="auth-wrapper">
+    <main className="auth-wrapper" id="main-content">
       <div className="auth-card">
         <div className="auth-logo">
           <BrandLogo className="auth-brand-logo" />
@@ -122,7 +122,7 @@ export default function VerifyOtp() {
             }}
           >
             <div>
-              🛠️ <strong>Dev Mode (Console Mailer):</strong> Verification code is{' '}
+              <strong>Development mode:</strong> Verification code is{' '}
               <strong style={{ letterSpacing: '2px', color: '#f8fafc', fontSize: '1rem', marginLeft: '4px' }}>
                 {devOtp}
               </strong>
@@ -164,6 +164,8 @@ export default function VerifyOtp() {
                 inputMode="numeric"
                 maxLength={1}
                 className="otp-input"
+                aria-label={`Digit ${i + 1} of 6`}
+                autoComplete={i === 0 ? 'one-time-code' : 'off'}
                 value={d}
                 onChange={e => handleDigit(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
@@ -193,6 +195,6 @@ export default function VerifyOtp() {
           <Link to="/register">← Back to registration</Link>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

@@ -66,7 +66,7 @@ function WaitingRoom({ info, onJoin, joining, error: joinError }) {
   const isTerminal = ['completed', 'no_show', 'cancelled'].includes(info.status)
 
   return (
-    <main className="meeting-waiting-page">
+    <main className="meeting-waiting-page" id="main-content">
       <section className="meeting-waiting-card">
         <div className="meeting-waiting-heading">
           <div className="meeting-waiting-icon"><Video size={25} aria-hidden="true" /></div>

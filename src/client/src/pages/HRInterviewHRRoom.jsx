@@ -169,7 +169,7 @@ export default function HRInterviewHRRoom() {
     const joinOpensAt = interviewInfo?.join_opens_at ? new Date(interviewInfo.join_opens_at) : null
     const isEarly = joinOpensAt && currentTime < joinOpensAt
     return (
-      <main className="hr-meeting-entry">
+      <main className="hr-meeting-entry" id="main-content">
         <section className="hr-meeting-entry-card">
           <div className="hr-meeting-entry-icon"><Video size={26} /></div>
           <span className="hr-meeting-entry-kicker">HIREENGINE · RECRUITER ROOM</span>
@@ -202,7 +202,7 @@ export default function HRInterviewHRRoom() {
   const ctx = roomData  // { token, server_url, candidate_name, cv_score, ai_score, resume_url, ... }
 
   return (
-    <main className="hr-meeting-shell">
+    <main className="hr-meeting-shell" id="main-content">
       <header className="hr-meeting-toolbar">
         <div>
           <span>LIVE INTERVIEW · ROUND 3</span>
@@ -276,7 +276,7 @@ export default function HRInterviewHRRoom() {
             <p>Existing screening scores</p>
             <div>
               <ScorePill label="CV Score" value={ctx.cv_score} max={100} color="#06b6d4" />
-              <ScorePill label="AI Interview" value={ctx.ai_score} max={100} color="#6366f1" />
+              <ScorePill label="AI Interview" value={ctx.ai_score} max={100} color="var(--mint-ink)" />
             </div>
           </div>
 

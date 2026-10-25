@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { 
-  FileText, CheckCircle, AlertTriangle, RefreshCw, Eye, 
-  X, Sparkles, Award, Shield, User, ArrowRight,
-  Send, CheckSquare, Square, Clock, Users, Mail, AlertCircle,
-  MessageSquare, Volume2, Video, ExternalLink, ArrowLeft,
+  FileText, CheckCircle, AlertTriangle, RefreshCw, Eye,
+  X, Sparkles, Award, Shield,
+  Send, CheckSquare, Square, Clock,
+  MessageSquare, Video, ArrowLeft,
   MapPin, CalendarDays, Building2, ClipboardList, Settings, UsersRound
 } from 'lucide-react'
 import api from '../services/api'
@@ -44,7 +44,6 @@ function formatDuration(seconds) {
 
 export default function JobDetail() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedCandidate, setSelectedCandidate] = useState(null)
@@ -210,7 +209,7 @@ export default function JobDetail() {
   return (
     <>
       <Navbar className="dashboard-navbar" />
-      <main className="job-detail-page">
+      <main className="job-detail-page" id="main-content">
         <div className="job-detail-heading">
           <div className="job-detail-heading-main">
             <Link to="/dashboard" className="job-detail-back"><ArrowLeft size={15} aria-hidden="true" /> Back to Dashboard</Link>
@@ -323,17 +322,7 @@ export default function JobDetail() {
           <div>
             {/* Round 1 CV Review Stage Action Banner */}
             {job.stage === 'cv_review' && (
-              <div className="card" style={{ 
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(6,182,212,0.1) 100%)',
-                border: '1px solid rgba(99,102,241,0.3)',
-                padding: '1.25rem 1.5rem',
-                marginBottom: '1.5rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '1rem',
-                flexWrap: 'wrap'
-              }}>
+              <div className="card job-stage-banner">
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     <Sparkles size={18} color="var(--color-primary-light)" />
@@ -358,7 +347,7 @@ export default function JobDetail() {
                   <button 
                     id="send-ai-invites-btn" 
                     className="btn btn-primary" 
-                    style={{ padding: '0.65rem 1.35rem', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }}
+                    style={{ padding: '0.65rem 1.35rem' }}
                     disabled={advancingCount === 0 || advancingCount > (job.ai_capacity || 0)}
                     onClick={openSendModal}
                   >
@@ -434,7 +423,8 @@ export default function JobDetail() {
                 </p>
                 {job.form_slug && (
                   <button className="btn btn-primary" onClick={copyLink}>
-                    📋 Copy Candidate Apply Link
+                    <ClipboardList size={16} aria-hidden="true" />
+                    Copy Candidate Apply Link
                   </button>
                 )}
               </div>
@@ -610,17 +600,7 @@ export default function JobDetail() {
           <div>
             {/* Banner: AI Review Stage */}
             {job.stage === 'ai_review' && (
-              <div className="card" style={{ 
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(6,182,212,0.14) 100%)',
-                border: '1px solid rgba(99,102,241,0.35)',
-                padding: '1.25rem 1.5rem',
-                marginBottom: '1.5rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '1rem',
-                flexWrap: 'wrap'
-              }}>
+              <div className="card job-stage-banner">
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     <Sparkles size={18} color="var(--color-primary-light)" />
@@ -641,7 +621,7 @@ export default function JobDetail() {
                   <button 
                     id="send-hr-invites-btn"
                     className="btn btn-primary" 
-                    style={{ padding: '0.65rem 1.35rem', background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)' }}
+                    style={{ padding: '0.65rem 1.35rem' }}
                     onClick={openSendModal}
                   >
                     <Send size={15} /> Send HR Invitations
@@ -668,7 +648,7 @@ export default function JobDetail() {
                   <div>
                     <h4 style={{ color: 'var(--color-warning)', marginBottom: '0.2rem' }}>AI Interviews In Progress</h4>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      Candidates are conducting their allocated voice interviews. Once all sessions conclude and automated scoring is complete, Round 2 review will unlock.
+                      Candidates are conducting their allocated voice interviews. Once all sessions conclude and automated scoring is complete, Round 2 review will be available.
                     </p>
                   </div>
                 </div>
@@ -700,7 +680,7 @@ export default function JobDetail() {
 
             {round2Apps.length === 0 ? (
               <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
-                <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🤖</p>
+                <Sparkles size={40} color="var(--mint-ink)" aria-hidden="true" style={{ marginBottom: '1rem' }} />
                 <h3 style={{ marginBottom: '0.5rem' }}>No Candidates in Round 2 Yet</h3>
                 <p style={{ maxWidth: '480px', margin: '0 auto', color: 'var(--text-secondary)' }}>
                   Once Round 1 CV screening is finished and invitations are sent, candidates will appear here for automated AI voice interviewing.
@@ -758,7 +738,8 @@ export default function JobDetail() {
                           {/* Status Badge */}
                           {isCompleted && (
                             <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
-                              ✓ AI Completed
+                              <CheckCircle size={13} aria-hidden="true" />
+                              AI Completed
                             </span>
                           )}
                           {isInProgress && (
@@ -909,17 +890,7 @@ export default function JobDetail() {
         {activeTab === 'round3' && (
           <div>
             {job.stage === 'hr_review' && (
-              <div className="card" style={{ 
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(6,182,212,0.1) 100%)',
-                border: '1px solid rgba(99,102,241,0.3)',
-                padding: '1.25rem 1.5rem',
-                marginBottom: '1.5rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '1rem',
-                flexWrap: 'wrap'
-              }}>
+              <div className="card job-stage-banner">
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     <Sparkles size={18} color="var(--color-primary-light)" />
@@ -941,13 +912,7 @@ export default function JobDetail() {
             )}
 
             {job.stage === 'hr_interview' && (
-              <div className="card" style={{ 
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.25)',
-                padding: '1rem 1.25rem',
-                marginBottom: '1.5rem',
-                display: 'flex', alignItems: 'center', gap: '0.75rem'
-              }}>
+              <div className="card job-interviews-banner">
                 <Video size={20} color="var(--color-primary-light)" />
                 <div>
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.1rem' }}>HR Video Interviews Active</p>
@@ -960,7 +925,7 @@ export default function JobDetail() {
 
             {round3Apps.length === 0 ? (
               <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
-                <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🎥</p>
+                <Video size={40} color="var(--mint-ink)" aria-hidden="true" style={{ marginBottom: '1rem' }} />
                 <h3 style={{ marginBottom: '0.5rem' }}>No Candidates in Round 3 Yet</h3>
                 <p style={{ maxWidth: '480px', margin: '0 auto', color: 'var(--text-secondary)' }}>
                   Candidates shortlisted after Round 2 will appear here for live video interviews with your hiring team.
@@ -1014,10 +979,16 @@ export default function JobDetail() {
                             <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>Completed · Pending Feedback</span>
                           )}
                           {isCompleted && fb?.decision === 'selected' && (
-                            <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>✓ Selected</span>
+                            <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
+                              <CheckCircle size={13} aria-hidden="true" />
+                              Selected
+                            </span>
                           )}
                           {isCompleted && fb?.decision === 'rejected' && (
-                            <span className="badge badge-danger" style={{ fontSize: '0.75rem' }}>✗ Rejected</span>
+                            <span className="badge badge-danger" style={{ fontSize: '0.75rem' }}>
+                              <X size={13} aria-hidden="true" />
+                              Rejected
+                            </span>
                           )}
                           {isNoShow && (
                             <span className="badge badge-danger" style={{ fontSize: '0.75rem' }}>No Show</span>
@@ -1048,12 +1019,7 @@ export default function JobDetail() {
                           <Link
                             id={`join-room-${app.id}`}
                             to={`/interviews/${intv.id}/room`}
-                            className="btn btn-primary"
-                            style={{
-                              fontSize: '0.85rem', padding: '0.5rem 1rem',
-                              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
-                              display: 'flex', alignItems: 'center', gap: '0.4rem',
-                            }}
+                            className="btn btn-primary job-room-action"
                           >
                             <Video size={14} /> Join Room
                           </Link>

@@ -26,13 +26,21 @@ const queryClient = new QueryClient({
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
-  if (loading) return <div className="auth-wrapper"><div className="spinner" /></div>
+  if (loading) return (
+    <main className="auth-wrapper" id="main-content" aria-busy="true">
+      <p role="status">Loading your workspace…</p>
+    </main>
+  )
   return isAuthenticated ? children : <Navigate to="/login" replace />
 }
 
 function GuestRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
-  if (loading) return <div className="auth-wrapper"><div className="spinner" /></div>
+  if (loading) return (
+    <main className="auth-wrapper" id="main-content" aria-busy="true">
+      <p role="status">Loading…</p>
+    </main>
+  )
   return !isAuthenticated ? children : <Navigate to="/dashboard" replace />
 }
 
@@ -41,6 +49,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
+          <a className="skip-link" href="#main-content">Skip to main content</a>
           <Routes>
             <Route path="/" element={<GuestRoute><Landing /></GuestRoute>} />
             

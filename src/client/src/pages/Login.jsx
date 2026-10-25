@@ -41,7 +41,7 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-wrapper">
+    <main className="auth-wrapper" id="main-content">
       <div className="auth-card">
         <div className="auth-logo">
           <BrandLogo className="auth-brand-logo" />
@@ -50,7 +50,7 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+          <div className="alert alert-error" role="alert" style={{ marginBottom: '1rem' }}>
             {error}
             {error.includes('not verified') && (
               <Link to="/register" style={{ marginLeft: '0.5rem' }}>Verify email →</Link>
@@ -60,15 +60,17 @@ export default function Login() {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Email address</label>
+            <label className="form-label" htmlFor="login-email">Email address</label>
             <input id="login-email" name="email" type="email" className="form-input"
-              placeholder="you@company.com" value={form.email} onChange={handleChange} required autoFocus />
+              placeholder="you@company.com" autoComplete="email" spellCheck={false}
+              value={form.email} onChange={handleChange} required autoFocus />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Password</label>
+            <label className="form-label" htmlFor="login-password">Password</label>
             <input id="login-password" name="password" type="password" className="form-input"
-              placeholder="••••••••" value={form.password} onChange={handleChange} required />
+              placeholder="Enter your password" autoComplete="current-password"
+              value={form.password} onChange={handleChange} required />
           </div>
 
           <button id="login-submit" type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
@@ -80,6 +82,6 @@ export default function Login() {
           Don't have an account? <Link to="/register">Create one</Link>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

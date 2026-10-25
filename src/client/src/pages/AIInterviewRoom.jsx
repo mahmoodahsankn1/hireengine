@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { 
   Mic, Volume2, Shield, Clock, AlertTriangle,
-  CheckCircle, Sparkles, PhoneOff
+  CheckCircle, Sparkles, PhoneOff, Smartphone
 } from 'lucide-react'
 import api from '../services/api'
 
@@ -451,7 +451,8 @@ export default function AIInterviewRoom() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <span className="badge badge-accent" style={{ marginBottom: '0.75rem', fontSize: '0.8rem' }}>
-              🤖 AI Technical Voice Interview
+              <Sparkles size={14} aria-hidden="true" />
+              AI Technical Voice Interview
             </span>
             <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>
               {interviewInfo?.job_title}
@@ -507,7 +508,8 @@ export default function AIInterviewRoom() {
               </div>
               {micTested && (
                 <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
-                  ✓ Mic Ready
+                  <CheckCircle size={14} aria-hidden="true" />
+                  Mic Ready
                 </span>
               )}
             </div>
@@ -544,7 +546,8 @@ export default function AIInterviewRoom() {
                 </div>
                 {micTested && (
                   <p style={{ fontSize: '0.8rem', color: 'var(--color-success)', marginTop: '0.6rem' }}>
-                    ✓ Voice detected! Your microphone is working properly.
+                    <CheckCircle size={14} aria-hidden="true" />
+                    Voice detected! Your microphone is working properly.
                   </p>
                 )}
               </div>
@@ -579,11 +582,12 @@ export default function AIInterviewRoom() {
             </button>
             {!canStart && interviewInfo?.is_early && (
               <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                The start button will automatically unlock at your scheduled interview time.
+                The start button will become available at your scheduled interview time.
               </p>
             )}
             <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
-              📱 <strong>Mobile Note:</strong> Make sure your device is not on Silent Mode (turn off physical mute switch on iPhone) and media volume is turned up.
+              <Smartphone size={14} aria-hidden="true" />
+              <strong>Mobile note:</strong> Make sure your device is not on Silent Mode (turn off physical mute switch on iPhone) and media volume is turned up.
             </p>
           </div>
         </div>
@@ -599,12 +603,11 @@ export default function AIInterviewRoom() {
     const elapsedPercent = Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100))
 
     return (
-      <main className="ai-room-page">
+      <main className="ai-room-page" id="main-content">
         <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
 
         <header className="ai-room-header">
           <div>
-            <span className="ai-room-eyebrow">AI INTERVIEW SESSION</span>
             <h1>{interviewInfo?.job_title}</h1>
             <p>{interviewInfo?.company_name} <span aria-hidden="true">·</span> {interviewInfo?.candidate_name}</p>
           </div>

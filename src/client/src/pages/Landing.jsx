@@ -1,196 +1,185 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ArrowDownRight,
-  ArrowRight,
-  AlertTriangle,
-  BriefcaseBusiness,
-  CalendarDays,
-  Clock3,
-  Code2,
-  ContactRound,
-  FileCheck2,
-  Link2,
-  MapPin,
-  Pencil,
-  Plus,
-  Search,
-  Sparkles,
-  UsersRound,
-} from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { BrandLogo } from '../components/common/BrandLogo'
 
-const previewStats = [
-  { label: 'Active Jobs', value: '3', icon: BriefcaseBusiness, tone: 'blue' },
-  { label: 'Applications', value: '11', icon: FileCheck2, tone: 'cyan' },
-  { label: 'CVs to Review', value: '0', icon: AlertTriangle, tone: 'orange' },
-  { label: 'Interviews', value: '0', icon: CalendarDays, tone: 'violet' },
+const pipelineStages = [
+  {
+    id: 'applications',
+    label: 'Applications',
+    candidates: [
+      { initials: 'MC', name: 'Maya Chen', role: 'Product Designer', status: 'New application' },
+      { initials: 'JR', name: 'Jordan Rivera', role: 'Product Designer', status: 'Resume received' },
+      { initials: 'AP', name: 'Avery Patel', role: 'Product Designer', status: 'Ready to review' },
+    ],
+  },
+  {
+    id: 'interviews',
+    label: 'Interviews',
+    candidates: [
+      { initials: 'SK', name: 'Sam Kim', role: 'Product Designer', status: 'AI interview invited' },
+      { initials: 'TG', name: 'Taylor Green', role: 'Product Designer', status: 'Interview complete' },
+    ],
+  },
+  {
+    id: 'team-review',
+    label: 'Team review',
+    candidates: [
+      { initials: 'RL', name: 'Riley Lee', role: 'Product Designer', status: 'HR interview' },
+    ],
+  },
 ]
 
-const previewJobs = [
-  { title: 'AI Automation Specialist', stage: 'Collecting', tone: 'green', location: 'Thrissur', count: '2 applications', date: '23 Oct 2026' },
-  { title: 'AI Automation Specialist', stage: 'HR Review', tone: 'blue', location: 'Thrissur', count: '4 applications', date: '21 Oct 2026' },
-  { title: 'Senior Full-Stack Engineer', stage: 'AI Review', tone: 'violet', location: 'Bengaluru, India', count: '5 applications', date: '22 Oct 2026' },
+const features = [
+  {
+    title: 'Keep every role moving',
+    description: 'Create a clear home for each opening, its requirements, its applicants, and the next step.',
+  },
+  {
+    title: 'Review with more context',
+    description: 'Bring structured CV review and interview signals together without giving up human judgment.',
+  },
+  {
+    title: 'Make interviews easier to plan',
+    description: 'Set availability and coordinate candidate interviews around the people on your team.',
+  },
 ]
 
 export default function Landing() {
+  const [activeStage, setActiveStage] = useState(pipelineStages[0].id)
+  const selectedStage = pipelineStages.find(stage => stage.id === activeStage)
+
   return (
-    <main className="landing">
+    <main className="landing" id="main-content">
       <header className="landing-header">
-        <Link to="/" className="landing-brand" aria-label="HireEngine home">
+        <Link to="/" className="landing-brand" aria-label="Hire Engine home">
           <BrandLogo />
         </Link>
         <nav className="landing-nav" aria-label="Main navigation">
-          <a href="#features">Features</a>
-          <a href="#about-us">About Us</a>
-          <a href="#how-it-works">How It Works</a>
+          <a href="#features">What you can do</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#about-us">About</a>
         </nav>
         <div className="landing-header-actions">
-          <Link className="landing-login-link" to="/login">Log in</Link>
+          <Link className="landing-login-link" to="/login">Sign in</Link>
           <Link className="landing-header-cta" to="/register">
-            Register <ArrowRight size={16} aria-hidden="true" />
+            Create an account <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
       </header>
 
-      <section className="landing-hero">
+      <section className="landing-hero" id="landing-hero" aria-labelledby="landing-title">
         <div className="landing-hero-copy">
-          <div className="landing-eyebrow">
-            <span className="landing-eyebrow-spark"><Sparkles size={14} aria-hidden="true" /></span>
-            End-to-end hiring workflow
-          </div>
-          <h1>
-            From first CV to
-            <br />
-            <span>final hire.</span>
-            <br />
-            One clear path.
-          </h1>
+          <h1 id="landing-title">Hire clearly.<br />Decide with care.</h1>
           <p className="landing-hero-description">
-            Publish roles, collect CVs, anonymize and rank applicants, run timed AI voice interviews,
-            then schedule clash-free HR meetings. AI supports evaluation; your team makes the final decision.
+            Publish roles, review applicants, and coordinate interviews in one thoughtful hiring workspace.
+            AI can help organize the process; your team makes every hiring decision.
           </p>
           <div className="landing-hero-actions">
             <Link className="landing-primary-cta" to="/register">
-              Build Your Hiring Pipeline <ArrowRight size={18} aria-hidden="true" />
+              Start hiring <ArrowRight size={18} aria-hidden="true" />
             </Link>
             <a className="landing-secondary-cta" href="#how-it-works">
-              Explore the Platform
+              See how it works
             </a>
           </div>
         </div>
 
-        <div className="landing-visual" aria-label="A preview of the HireEngine HR dashboard">
-          <div className="landing-orbit landing-orbit-one" />
-          <div className="landing-orbit landing-orbit-two" />
-          <div className="landing-dashboard">
-            <div className="landing-preview-topbar">
-              <BrandLogo />
-              <span className="landing-preview-user">Mahmood Ahsan <i>MA</i></span>
+        <section className="landing-demo" data-ui aria-label="Interactive example hiring pipeline">
+          <header className="landing-demo-heading">
+            <div>
+              <h2>Candidate pipeline</h2>
+              <p>Move through each stage with your team.</p>
             </div>
-            <div className="landing-preview-main">
-              <div className="landing-preview-welcome">
-                <span>HR DASHBOARD</span>
-                <strong>Welcome back, Mahmood <span aria-hidden="true">👋</span></strong>
-                <small>Track anonymized CV reviews, AI interviews, and final HR decisions.</small>
-                <span className="landing-preview-post"><Plus size={13} /> Post New Job</span>
-              </div>
-              <div className="landing-preview-stats">
-                {previewStats.map(({ label, value, icon: Icon, tone }) => (
-                  <div className="landing-preview-stat" key={label}>
-                    <span className={`preview-icon preview-${tone}`}><Icon size={13} aria-hidden="true" /></span>
-                    <span className="preview-stat-copy"><small>{label}</small><strong>{value}</strong></span>
-                  </div>
-                ))}
-              </div>
-              <div className="landing-preview-jobs-heading">
-                <span><strong>Your Jobs</strong> (3)</span>
-                <span><Search size={11} /> Search jobs... <i>All Status⌄</i></span>
-              </div>
-              <div className="landing-preview-jobs">
-                {previewJobs.map(job => (
-                  <article className="landing-preview-job" key={`${job.title}-${job.stage}`}>
-                    <div className="landing-preview-job-title"><strong>{job.title}</strong><span className={`preview-status status-${job.tone}`}><i />{job.stage}</span></div>
-                    <div className="landing-preview-job-meta">
-                      <span><MapPin size={10} />{job.location}</span>
-                      <span><Clock3 size={10} />Full time</span>
-                      <span><CalendarDays size={10} />{job.date}</span>
-                      <span><UsersRound size={10} />{job.count}</span>
-                    </div>
-                    <div className="landing-preview-job-actions">
-                      <span><Link2 size={11} /> Copy Link</span>
-                      <span><Pencil size={11} /> Edit</span>
-                    </div>
-                  </article>
-                ))}
-            </div>
+            <span className="landing-demo-sample">Example data</span>
+          </header>
+          <div className="landing-demo-tabs" role="group" aria-label="Filter example candidates">
+            {pipelineStages.map(stage => (
+              <button
+                key={stage.id}
+                type="button"
+                aria-pressed={activeStage === stage.id}
+                onClick={() => setActiveStage(stage.id)}
+              >
+                {stage.label}
+                <span>{stage.candidates.length}</span>
+              </button>
+            ))}
           </div>
-        </div>
-        </div>
-
-        <a className="landing-scroll-cue" href="#how-it-works" aria-label="Scroll to learn more">
-          <span>SCROLL TO EXPLORE</span><ArrowDownRight size={15} aria-hidden="true" />
-        </a>
+          <ul className="landing-demo-candidates" aria-live="polite">
+            {selectedStage.candidates.map(candidate => (
+              <li className="landing-demo-candidate" key={candidate.name}>
+                <span className="landing-demo-avatar" aria-hidden="true">{candidate.initials}</span>
+                <span className="landing-demo-candidate-copy">
+                  <strong>{candidate.name}</strong>
+                  <span>{candidate.role}</span>
+                </span>
+                <span className="landing-demo-status">{candidate.status}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="landing-demo-note">AI supports the review. Your team makes the final call.</p>
+        </section>
       </section>
 
-      <section className="landing-proof" id="features">
-        <div className="landing-proof-intro">
-          <span className="landing-section-label">A better kind of hiring</span>
-          <h2>All the moving parts.<br /><span>One clear path forward.</span></h2>
+      <section className="landing-features" id="features" aria-labelledby="features-title">
+        <div className="landing-section-intro">
+          <h2 id="features-title">One process, from role to decision</h2>
+          <p>Give your hiring team a shared view of what is happening and what needs attention next.</p>
         </div>
-        <div className="landing-proof-item">
-          <span className="landing-proof-icon proof-violet"><FileCheck2 size={20} aria-hidden="true" /></span>
-          <h3>Every application, organized</h3>
-          <p>Keep roles, candidate details, and next steps together—not scattered across tabs.</p>
-        </div>
-        <div className="landing-proof-item">
-          <span className="landing-proof-icon proof-cyan"><UsersRound size={20} aria-hidden="true" /></span>
-          <h3>Thoughtful, structured interviews</h3>
-          <p>Give your team a consistent process while keeping real conversations at the center.</p>
-        </div>
-        <div className="landing-proof-item">
-          <span className="landing-proof-icon proof-peach"><Sparkles size={20} aria-hidden="true" /></span>
-          <h3>Helpful AI. Human decisions.</h3>
-          <p>Use AI to support your workflow, with your people always making the final call.</p>
+        <div className="landing-feature-list">
+          {features.map(({ title, description }) => (
+            <article className="landing-feature" key={title}>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section className="landing-how" id="how-it-works">
+      <section className="landing-how" id="how-it-works" aria-labelledby="how-title">
         <div className="landing-how-intro">
-          <span className="landing-section-label">How it works</span>
-          <h2>From open role to <span>great hire.</span></h2>
-          <p>A simpler, more connected hiring journey for your whole team.</p>
+          <h2 id="how-title">A clearer hiring journey</h2>
+          <p>Keep the next action visible at every stage, from opening a role to meeting a candidate.</p>
         </div>
-        <div className="landing-how-steps">
-          <article><span>01</span><h3>Create a role</h3><p>Set up a job and bring every application into one organized workspace.</p></article>
-          <article><span>02</span><h3>Find your match</h3><p>Review candidates with helpful matching insights and a clear hiring pipeline.</p></article>
-          <article><span>03</span><h3>Meet and decide</h3><p>Coordinate interviews, share feedback, and let your team make the final call.</p></article>
-        </div>
+        <ol className="landing-how-steps">
+          <li>
+            <h3>Set up the role</h3>
+            <p>Define the position, requirements, and interview availability before you publish.</p>
+          </li>
+          <li>
+            <h3>Review applicants</h3>
+            <p>Collect applications and use structured signals to decide who moves forward.</p>
+          </li>
+          <li>
+            <h3>Meet and decide</h3>
+            <p>Coordinate interviews, share feedback, and keep the hiring decision with your team.</p>
+          </li>
+        </ol>
       </section>
 
-      <section className="landing-about" id="about-us">
+      <section className="landing-about" id="about-us" aria-labelledby="about-title">
         <div>
-          <span className="landing-section-label">About the creator</span>
-          <h2>Hi, I’m Mahmood Ahsan.</h2>
+          <h2 id="about-title">Built with care for better hiring</h2>
           <p>
-            I’m currently pursuing a Master of Computer Applications at Vidya Academy of Science
-            and Technology, with an expected graduation in May 2027. I also hold a Bachelor of
-            Computer Applications.
+            HireEngine is a recruiting project by Mahmood Ahsan, created to make role management,
+            candidate review, and interview coordination feel like one connected process.
           </p>
         </div>
         <div className="landing-about-links">
           <a href="https://www.linkedin.com/in/mahmoodahsan" target="_blank" rel="noreferrer">
-            <ContactRound size={19} aria-hidden="true" /> Connect on LinkedIn <ArrowRight size={15} aria-hidden="true" />
+            Connect on LinkedIn <ArrowRight size={15} aria-hidden="true" />
           </a>
           <a href="https://github.com/mahmoodahsankn1/" target="_blank" rel="noreferrer">
-            <Code2 size={19} aria-hidden="true" /> Explore my GitHub <ArrowRight size={15} aria-hidden="true" />
+            Explore the project <ArrowRight size={15} aria-hidden="true" />
           </a>
         </div>
       </section>
 
       <footer className="landing-footer">
-        <Link to="/" className="landing-brand" aria-label="HireEngine home"><BrandLogo /></Link>
-        <span>HireEngine · Created by Mahmood Ahsan</span>
-        <Link to="/login">Log in <ArrowRight size={14} aria-hidden="true" /></Link>
+        <Link to="/" className="landing-brand" aria-label="Hire Engine home"><BrandLogo /></Link>
+        <span>Hire Engine · A connected hiring workspace</span>
+        <Link to="/login">Sign in <ArrowRight size={14} aria-hidden="true" /></Link>
       </footer>
     </main>
   )

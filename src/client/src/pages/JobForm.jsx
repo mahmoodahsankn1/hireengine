@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { AlertTriangle, CheckCircle2, X } from 'lucide-react'
 import api from '../services/api'
 import Navbar from '../components/Navbar'
 
@@ -40,7 +41,10 @@ function CapacityBadge({ count, required, label }) {
   const ok = count >= required
   return (
     <span className={`capacity-badge ${ok ? 'capacity-ok' : 'capacity-error'}`}>
-      {ok ? '✓' : '⚠'} {label}: {count} slots (need {required})
+      {ok
+        ? <CheckCircle2 size={14} aria-hidden="true" />
+        : <AlertTriangle size={14} aria-hidden="true" />}
+      {label}: {count} slots (need {required})
     </span>
   )
 }
@@ -218,14 +222,12 @@ export default function JobForm() {
   return (
     <>
       <Navbar />
-      <main className="page job-form-page">
+      <main className="page job-form-page" id="main-content">
         <header className="job-form-header">
           <div className="job-form-heading">
-            <span className="job-form-eyebrow">{isEdit ? 'JOB WORKSPACE / EDIT ROLE' : 'JOB WORKSPACE / NEW ROLE'}</span>
             <h1>{isEdit ? 'Refine your job posting' : 'Create a standout job posting'}</h1>
             <p>{isEdit ? `Update the role details${jobData?.title ? ` for ${jobData.title}` : ''}.` : 'Set the role requirements, interview stages, and candidate schedule in one place.'}</p>
           </div>
-          <div className="job-form-header-mark" aria-hidden="true"><span>HE</span></div>
         </header>
 
         {serverError && (
@@ -240,37 +242,38 @@ export default function JobForm() {
           {/* ── Basic Info ── */}
           <section className="card job-form-section">
             <div className="job-form-section-heading">
-              <span className="job-form-step">01</span>
               <div><h2>Role details</h2><p>Give candidates a clear picture of the position.</p></div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="form-group">
-                <label className="form-label">Job Title *</label>
+                <label className="form-label" htmlFor="job-title">Job Title *</label>
                 <input id="job-title" name="title" type="text" className={`form-input ${errors.title ? 'error' : ''}`}
-                  placeholder="e.g. Senior Backend Engineer" value={form.title} onChange={handleChange} required />
-                {errors.title && <span className="form-error">{errors.title}</span>}
+                  placeholder="e.g. Senior Backend Engineer" value={form.title} onChange={handleChange} required
+                  aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'job-title-error' : undefined} />
+                {errors.title && <span className="form-error" id="job-title-error">{errors.title}</span>}
               </div>
 
               <div className="form-group">
-                <label className="form-label">Job Description *</label>
+                <label className="form-label" htmlFor="job-desc">Job Description *</label>
                 <textarea id="job-desc" name="description" className={`form-textarea ${errors.description ? 'error' : ''}`}
                   placeholder="Describe the role, responsibilities, and what makes it exciting…"
                   value={form.description} onChange={handleChange} required rows={5}
-                  disabled={hasApplications} />
-                {hasApplications && <span className="form-hint">⚠ Description locked after first application</span>}
-                {errors.description && <span className="form-error">{errors.description}</span>}
+                  disabled={hasApplications} aria-invalid={Boolean(errors.description)}
+                  aria-describedby={errors.description ? 'job-desc-error' : hasApplications ? 'job-description-lock-note' : undefined} />
+                {hasApplications && <span className="form-hint" id="job-description-lock-note">Description locked after the first application.</span>}
+                {errors.description && <span className="form-error" id="job-desc-error">{errors.description}</span>}
               </div>
 
               <div className="job-form-grid">
                 <div className="form-group">
-                  <label className="form-label">Employment Type *</label>
+                  <label className="form-label" htmlFor="job-emp-type">Employment Type *</label>
                   <select id="job-emp-type" name="employment_type" className="form-select"
                     value={form.employment_type} onChange={handleChange}>
                     {EMPLOYMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Work Mode *</label>
+                  <label className="form-label" htmlFor="job-work-mode">Work Mode *</label>
                   <select id="job-work-mode" name="work_mode" className="form-select"
                     value={form.work_mode} onChange={handleChange}>
                     {WORK_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
@@ -280,13 +283,13 @@ export default function JobForm() {
 
               <div className="job-form-grid">
                 <div className="form-group">
-                  <label className="form-label">Location *</label>
+                  <label className="form-label" htmlFor="job-location">Location *</label>
                   <input id="job-location" name="location" type="text" className={`form-input ${errors.location ? 'error' : ''}`}
                     placeholder="e.g. Bangalore, India" value={form.location} onChange={handleChange} required />
                   {errors.location && <span className="form-error">{errors.location}</span>}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Min. Experience (years)</label>
+                  <label className="form-label" htmlFor="job-exp">Min. Experience (years)</label>
                   <input id="job-exp" name="min_experience_years" type="number" min="0" className="form-input"
                     value={form.min_experience_years} onChange={handleChange} />
                 </div>
@@ -294,12 +297,12 @@ export default function JobForm() {
 
               <div className="job-form-grid">
                 <div className="form-group">
-                  <label className="form-label">Salary Range</label>
+                  <label className="form-label" htmlFor="job-salary">Salary Range</label>
                   <input id="job-salary" name="salary_range" type="text" className="form-input"
                     placeholder="e.g. ₹12–18 LPA" value={form.salary_range} onChange={handleChange} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Application Deadline *</label>
+                  <label className="form-label" htmlFor="job-deadline">Application Deadline *</label>
                   <input id="job-deadline" name="application_deadline" type="datetime-local"
                     className={`form-input ${errors.application_deadline ? 'error' : ''}`}
                     value={form.application_deadline} onChange={handleChange} required />
@@ -312,7 +315,6 @@ export default function JobForm() {
           {/* ── Required Skills ── */}
           <section className="card job-form-section">
             <div className="job-form-section-heading">
-              <span className="job-form-step">02</span>
               <div><h2>Skills &amp; requirements</h2><p>Separate essential experience from additional strengths.</p></div>
             </div>
             {hasApplications && (
@@ -325,9 +327,11 @@ export default function JobForm() {
                 <div key={i} className="skill-row">
                   <input id={`skill-name-${i}`} type="text" className={`form-input ${errors.required_skills ? 'error' : ''}`}
                     placeholder="e.g. Python" value={sk.skill}
+                    aria-label={`Required skill ${i + 1}`}
                     onChange={e => updateSkill(i, 'skill', e.target.value)}
                     disabled={hasApplications} />
                   <select id={`skill-level-${i}`} className="form-select" style={{ maxWidth: 110 }}
+                    aria-label={`Requirement level for skill ${i + 1}`}
                     value={sk.level} onChange={e => updateSkill(i, 'level', e.target.value)}
                     disabled={hasApplications}>
                     <option value="must">Must</option>
@@ -335,7 +339,9 @@ export default function JobForm() {
                   </select>
                   {!hasApplications && (
                     <button type="button" className="btn btn-ghost" onClick={() => removeSkill(i)}
-                      disabled={skills.length === 1}>✕</button>
+                      aria-label={`Remove required skill ${i + 1}`} disabled={skills.length === 1}>
+                      <X size={15} aria-hidden="true" />
+                    </button>
                   )}
                 </div>
               ))}
@@ -352,18 +358,17 @@ export default function JobForm() {
           {/* ── Shortlist & Scoring ── */}
           <section className="card job-form-section">
             <div className="job-form-section-heading">
-              <span className="job-form-step">03</span>
               <div><h2>Screening &amp; shortlist</h2><p>Configure candidate cutoffs and interview capacity.</p></div>
             </div>
             <div className="job-form-grid">
               <div className="form-group">
-                <label className="form-label">AI Shortlist Count *</label>
+                <label className="form-label" htmlFor="job-ai-count">AI Shortlist Count *</label>
                 <input id="job-ai-count" name="ai_shortlist_count" type="number" min="1" className="form-input"
                   value={form.ai_shortlist_count} onChange={handleChange} required />
                 <span className="form-hint">Candidates to invite for AI interview</span>
               </div>
               <div className="form-group">
-                <label className="form-label">Final Shortlist Count *</label>
+                <label className="form-label" htmlFor="job-final-count">Final Shortlist Count *</label>
                 <input id="job-final-count" name="final_shortlist_count" type="number" min="1" className="form-input"
                   value={form.final_shortlist_count} onChange={handleChange} required />
                 <span className="form-hint">Must be ≤ AI shortlist count</span>
@@ -371,7 +376,7 @@ export default function JobForm() {
             </div>
             <div className="job-form-grid" style={{ marginTop: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Min CV Score (0–100)</label>
+                <label className="form-label" htmlFor="job-min-score">Min CV Score (0–100)</label>
                 <input id="job-min-score" name="min_cv_score" type="number" min="0" max="100" className="form-input"
                   placeholder="Optional" value={form.min_cv_score} onChange={handleChange} />
               </div>
@@ -381,33 +386,32 @@ export default function JobForm() {
           {/* ── AI Interview Settings ── */}
           <section className="card job-form-section">
             <div className="job-form-section-heading">
-              <span className="job-form-step">04</span>
               <div><h2>AI interview</h2><p>Choose the interview focus and time allowance.</p></div>
             </div>
             <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label">Custom Interview Prompt</label>
+              <label className="form-label" htmlFor="job-ai-prompt">Custom Interview Prompt</label>
               <textarea id="job-ai-prompt" name="ai_interview_prompt" className="form-textarea"
                 placeholder="Specific topics or questions for the AI interviewer (e.g. focus on system design, ask about past projects)…"
                 value={form.ai_interview_prompt} onChange={handleChange} rows={3} />
             </div>
             <div className="job-form-grid">
               <div className="form-group">
-                <label className="form-label">Duration (1–5 min) *</label>
+                <label className="form-label" htmlFor="job-ai-dur">Duration (1–5 min) *</label>
                 <input id="job-ai-dur" name="ai_duration_minutes" type="number" min="1" max="5" className="form-input"
                   value={form.ai_duration_minutes} onChange={handleChange} required />
               </div>
               <div className="form-group">
-                <label className="form-label">Buffer (min)</label>
+                <label className="form-label" htmlFor="job-ai-buf">Buffer (min)</label>
                 <input id="job-ai-buf" name="ai_buffer_minutes" type="number" min="1" className="form-input"
                   value={form.ai_buffer_minutes} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label className="form-label">Join Early (min)</label>
+                <label className="form-label" htmlFor="job-ai-join-early">Join Early (min)</label>
                 <input id="job-ai-join-early" name="ai_join_early_minutes" type="number" min="1" className="form-input"
                   value={form.ai_join_early_minutes} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label className="form-label">Late Grace (min) *</label>
+                <label className="form-label" htmlFor="job-ai-late">Late Grace (min) *</label>
                 <input id="job-ai-late" name="ai_late_grace_minutes" type="number" min="0" className="form-input"
                   value={form.ai_late_grace_minutes} onChange={handleChange} />
                 <span className="form-hint">Must be ≤ buffer minutes</span>
@@ -419,22 +423,21 @@ export default function JobForm() {
           {/* ── HR Interview Settings ── */}
           <section className="card job-form-section">
             <div className="job-form-section-heading">
-              <span className="job-form-step">05</span>
               <div><h2>Live interview</h2><p>Set the duration and joining window for recruiter meetings.</p></div>
             </div>
             <div className="job-form-grid">
               <div className="form-group">
-                <label className="form-label">Duration (min)</label>
+                <label className="form-label" htmlFor="job-hr-dur">Duration (min)</label>
                 <input id="job-hr-dur" name="hr_duration_minutes" type="number" min="10" className="form-input"
                   value={form.hr_duration_minutes} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label className="form-label">Buffer (min)</label>
+                <label className="form-label" htmlFor="job-hr-buf">Buffer (min)</label>
                 <input id="job-hr-buf" name="hr_buffer_minutes" type="number" min="1" className="form-input"
                   value={form.hr_buffer_minutes} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label className="form-label">Join Early (min)</label>
+                <label className="form-label" htmlFor="job-hr-join-early">Join Early (min)</label>
                 <input id="job-hr-join-early" name="hr_join_early_minutes" type="number" min="1" className="form-input"
                   value={form.hr_join_early_minutes} onChange={handleChange} />
               </div>
@@ -444,7 +447,6 @@ export default function JobForm() {
           {/* ── Availability Windows ── */}
           <section className="card job-form-section">
             <div className="job-form-section-heading">
-              <span className="job-form-step">06</span>
               <div><h2>Interview availability</h2><p>Publish the slots candidates can book for each interview stage.</p></div>
             </div>
             <p className="job-form-help">
@@ -468,7 +470,10 @@ export default function JobForm() {
                       value={w.start_at} onChange={e => updateWindow(setAiWindows, i, 'start_at', e.target.value)} />
                     <input id={`ai-win-end-${i}`} type="datetime-local" className="form-input"
                       value={w.end_at} onChange={e => updateWindow(setAiWindows, i, 'end_at', e.target.value)} />
-                    <button type="button" className="btn btn-ghost" onClick={() => removeWindow(setAiWindows, i)}>✕</button>
+                    <button type="button" className="btn btn-ghost" aria-label={`Remove AI interview window ${i + 1}`}
+                      onClick={() => removeWindow(setAiWindows, i)}>
+                      <X size={15} aria-hidden="true" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -493,7 +498,10 @@ export default function JobForm() {
                       value={w.start_at} onChange={e => updateWindow(setHrWindows, i, 'start_at', e.target.value)} />
                     <input id={`hr-win-end-${i}`} type="datetime-local" className="form-input"
                       value={w.end_at} onChange={e => updateWindow(setHrWindows, i, 'end_at', e.target.value)} />
-                    <button type="button" className="btn btn-ghost" onClick={() => removeWindow(setHrWindows, i)}>✕</button>
+                    <button type="button" className="btn btn-ghost" aria-label={`Remove HR interview window ${i + 1}`}
+                      onClick={() => removeWindow(setHrWindows, i)}>
+                      <X size={15} aria-hidden="true" />
+                    </button>
                   </div>
                 ))}
               </div>
